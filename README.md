@@ -1,11 +1,13 @@
-# 🛒 Sales Forecast System
+# 🛒 Sales Forecast System (Europe-Ready)
 
-A real-data, full-stack retail analytics foundation using the Kaggle Superstore dataset.
-Demonstrates business-oriented EDA, a roadmap to ML forecasting, and extension into APIs, frontend, databases, BI dashboards, and cloud deployment – aligned with the tech stack widely used in EU companies.
+A **full-stack retail analytics MVP** built on Kaggle’s *Superstore* dataset.  
+From **EDA & forecasting** in Python → **FastAPI services** → **Next.js frontend** → **PostgreSQL + Power BI** → **Azure deployment**.  
+Designed to highlight **product thinking, engineering quality, and business value** for European teams.
 
 ---
 
 ## ✨ What’s in v1.0 (MVP)
+
 - ✅ **Schema normalisation** for Superstore fields (`Order Date`, `Sales`, `Quantity`, `Category`, …)  
 - ✅ **KPIs**: Total Revenue, Total Orders, Average Order Value (order-level where possible)  
 - ✅ **Charts**:  
@@ -19,24 +21,25 @@ Demonstrates business-oriented EDA, a roadmap to ML forecasting, and extension i
 ## 🚀 Quickstart
 
 ### Windows (PowerShell)
+```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 python src\eda_v1.0.py --input data\Superstore.csv --outdir reports --title "Retail EDA — MVP 1.0"
-
-### macOS / Linux
+macOS / Linux
+```bash
 python -m venv venv
 source venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 python src/eda_v1.0.py --input data/Superstore.csv --outdir reports --title "Retail EDA — MVP 1.0"
-
 👉 Open reports/eda_report.html in your browser.
 
 🔓 Unlock 1.1 Features (optional flags)
 Already implemented, but OFF by default. Toggle them like this:
 
+```bash
 python src/eda_v1.0.py --input data/Superstore.csv --outdir reports \
   --enable-subcat 1 --enable-priceqty 1 --enable-profit 1 \
   --enable-geo 1 --enable-weekly 1 --winsor-pct 0.01
@@ -78,6 +81,8 @@ Now (1.0):
 CSV → Normalise → KPIs + Charts → HTML report
 
 Target:
+
+```java
 CSV / DWH ──> EDA (1.0/1.1) ──> Forecast (1.2) ──> FastAPI (1.3)
                                    │                   │
                                    ▼                   ▼
@@ -88,15 +93,16 @@ CSV / DWH ──> EDA (1.0/1.1) ──> Forecast (1.2) ──> FastAPI (1.3)
 
 Infra: Azure App Service/Container Apps + Azure Database for PostgreSQL + Vercel/Azure SWA (1.7)
 📌 Why this matters (for EU retail/data teams)
-Business value: Fast revenue trends, category mix, profitability signals.
+Business value: Fast revenue trends, category mix, profitability signals
 
-Explainability first: Simple KPIs/charts before ML so stakeholders trust results.
+Explainability first: Simple KPIs/charts before ML so stakeholders trust results
 
-Operational path: Clear evolution into API + DB + BI on Azure/Power BI stack widely used in EU.
+Operational path: Clear evolution into API + DB + BI on Azure/Power BI stack widely used in EU
 
-Privacy-aware: Runs locally, GDPR-conscious by design (no PII in reports).
+Privacy-aware: Runs locally, GDPR-conscious by design (no PII in reports)
 
 📂 Project structure
+```bash
 .
 ├─ data/                # Superstore.csv (not committed)
 ├─ reports/             # Generated artefacts (gitignored)
@@ -108,3 +114,25 @@ Privacy-aware: Runs locally, GDPR-conscious by design (no PII in reports).
 │  └─ run_eda.bat       # Windows CMD helper
 ├─ requirements.txt
 └─ README.md
+🖼️ Screenshots (to add)
+KPI cards (from eda_report.html)
+
+Monthly revenue trend
+
+Revenue by category
+
+(Add PNGs under assets/ and embed them here for maximum visual impact.)
+
+🧑‍💼 Interview pitch
+Built a one-command retail analytics app that standardises messy CSVs and produces stakeholder-ready HTML reports
+
+Shows clear product evolution: toggled enhancements (1.1) + roadmap to ML/API/FE/DB/BI/Cloud
+
+Emphasises EU-grade practices: reproducibility, GDPR awareness, deterministic outputs
+
+📜 Data & License
+Dataset: Kaggle Sample Superstore (public demo dataset)
+
+Intended for learning & portfolio use, not production
+
+License: MIT
