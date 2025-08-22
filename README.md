@@ -1,4 +1,4 @@
-# Sales Forecast System (Europe‑Ready)
+# Sales Forecast System
 
 A full‑stack retail analytics MVP built on Kaggle’s *Superstore* dataset.  
 Scope: Python EDA today (v1.0) with a clear path to forecasting, APIs, frontend, database logging, BI, and Azure deployment.
