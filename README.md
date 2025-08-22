@@ -15,6 +15,14 @@ Scope: Python EDA today (v1.0) with a clear path to forecasting, APIs, frontend,
 
 ---
 
+## 🖼️ Screenshots
+
+![KPI cards](assets/kpi.png)
+![Monthly revenue](assets/monthly_revenue.png)
+![Category revenue](assets/category_revenue.png)
+
+---
+
 ## Quickstart
 
 ### Windows (PowerShell)
