@@ -23,66 +23,64 @@ Designed to highlight **product thinking, engineering quality, and business valu
 ### Windows (PowerShell)
 ```powershell
 python -m venv venv
-.\venv\Scripts\Activate.ps1
+.env\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 python src\eda_v1.0.py --input data\Superstore.csv --outdir reports --title "Retail EDA — MVP 1.0"
-macOS / Linux
+```
+
+### macOS / Linux
 ```bash
 python -m venv venv
 source venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 python src/eda_v1.0.py --input data/Superstore.csv --outdir reports --title "Retail EDA — MVP 1.0"
-👉 Open reports/eda_report.html in your browser.
+```
 
-🔓 Unlock 1.1 Features (optional flags)
+👉 Open `reports/eda_report.html` in your browser.
+
+---
+
+## 🔓 Unlock 1.1 Features (optional flags)
+
 Already implemented, but OFF by default. Toggle them like this:
 
 ```bash
-python src/eda_v1.0.py --input data/Superstore.csv --outdir reports \
-  --enable-subcat 1 --enable-priceqty 1 --enable-profit 1 \
-  --enable-geo 1 --enable-weekly 1 --winsor-pct 0.01
-Flags
+python src/eda_v1.0.py --input data/Superstore.csv --outdir reports   --enable-subcat 1 --enable-priceqty 1 --enable-profit 1   --enable-geo 1 --enable-weekly 1 --winsor-pct 0.01
+```
 
---enable-subcat → Top-N sub-categories by revenue
+**Flags**  
+- `--enable-subcat` → Top-N sub-categories by revenue  
+- `--enable-priceqty` → Price vs Quantity scatter (sampled)  
+- `--enable-profit` → Profit margin / contribution charts  
+- `--enable-geo` → Top regions (auto-selects State/City/Region)  
+- `--enable-weekly` → Weekly revenue trend  
+- `--winsor-pct` → Outlier clipping (e.g. `0.01` trims 1% tails)  
 
---enable-priceqty → Price vs Quantity scatter (sampled)
+---
 
---enable-profit → Profit margin / contribution charts
+## 📊 Roadmap (Iteration Plan)
 
---enable-geo → Top regions (auto-selects State/City/Region)
+- [x] **1.0 — MVP**: Normalise CSV → KPIs → Monthly & Category charts → HTML report  
+- [ ] **1.1 — Enhanced EDA**: Winsorisation, weekly/monthly, Top-N, geo, profit contribution  
+- [ ] **1.2 — Forecasting**: Aggregate monthly → RF/XGBoost → *Actual vs Forecast* chart → save model  
+- [ ] **1.3 — FastAPI**: `/predict` endpoint returning JSON forecasts  
+- [ ] **1.4 — Next.js**: Horizon input → call API → render charts  
+- [ ] **1.5 — PostgreSQL**: Store forecasts & request logs  
+- [ ] **1.6 — Power BI**: Direct PG connection for KPI dashboards  
+- [ ] **1.7 — Cloud Deployment**: Azure (API+DB, EU region), Vercel/Azure SWA (Frontend)  
+- [ ] **Final Deliverable**: Screenshots, architecture diagram, CI/CD, online demo  
 
---enable-weekly → Weekly revenue trend
+---
 
---winsor-pct → Outlier clipping (e.g. 0.01 trims 1% tails)
+## 📐 Architecture (current → target)
 
-📊 Roadmap (Iteration Plan)
- 1.0 — MVP: Normalise CSV → KPIs → Monthly & Category charts → HTML report
+**Now (1.0):**  
+CSV → Normalise → KPIs + Charts → HTML report  
 
- 1.1 — Enhanced EDA: Winsorisation, weekly/monthly, Top-N, geo, profit contribution
-
- 1.2 — Forecasting: Aggregate monthly → RF/XGBoost → Actual vs Forecast chart → save model
-
- 1.3 — FastAPI: /predict endpoint returning JSON forecasts
-
- 1.4 — Next.js: Horizon input → call API → render charts
-
- 1.5 — PostgreSQL: Store forecasts & request logs
-
- 1.6 — Power BI: Direct PG connection for KPI dashboards
-
- 1.7 — Cloud Deployment: Azure (API+DB, EU region), Vercel/Azure SWA (Frontend)
-
- Final Deliverable: Screenshots, architecture diagram, CI/CD, online demo
-
-📐 Architecture (current → target)
-Now (1.0):
-CSV → Normalise → KPIs + Charts → HTML report
-
-Target:
-
-```java
+**Target:**  
+```text
 CSV / DWH ──> EDA (1.0/1.1) ──> Forecast (1.2) ──> FastAPI (1.3)
                                    │                   │
                                    ▼                   ▼
@@ -92,16 +90,21 @@ CSV / DWH ──> EDA (1.0/1.1) ──> Forecast (1.2) ──> FastAPI (1.3)
                               Next.js (1.4)
 
 Infra: Azure App Service/Container Apps + Azure Database for PostgreSQL + Vercel/Azure SWA (1.7)
-📌 Why this matters (for EU retail/data teams)
-Business value: Fast revenue trends, category mix, profitability signals
+```
 
-Explainability first: Simple KPIs/charts before ML so stakeholders trust results
+---
 
-Operational path: Clear evolution into API + DB + BI on Azure/Power BI stack widely used in EU
+## 📌 Why this matters (for EU retail/data teams)
 
-Privacy-aware: Runs locally, GDPR-conscious by design (no PII in reports)
+- **Business value**: Fast revenue trends, category mix, profitability signals  
+- **Explainability first**: Simple KPIs/charts before ML so stakeholders trust results  
+- **Operational path**: Clear evolution into API + DB + BI on **Azure/Power BI stack** widely used in EU  
+- **Privacy-aware**: Runs locally, GDPR-conscious by design (no PII in reports)  
 
-📂 Project structure
+---
+
+## 📂 Project structure
+
 ```bash
 .
 ├─ data/                # Superstore.csv (not committed)
@@ -114,25 +117,30 @@ Privacy-aware: Runs locally, GDPR-conscious by design (no PII in reports)
 │  └─ run_eda.bat       # Windows CMD helper
 ├─ requirements.txt
 └─ README.md
-🖼️ Screenshots (to add)
-KPI cards (from eda_report.html)
+```
 
-Monthly revenue trend
+---
 
-Revenue by category
+## 🖼️ Screenshots (to add)
 
-(Add PNGs under assets/ and embed them here for maximum visual impact.)
+- KPI cards (from `eda_report.html`)  
+- Monthly revenue trend  
+- Revenue by category  
 
-🧑‍💼 Interview pitch
-Built a one-command retail analytics app that standardises messy CSVs and produces stakeholder-ready HTML reports
+*(Add PNGs under `assets/` and embed them here for maximum visual impact.)*  
 
-Shows clear product evolution: toggled enhancements (1.1) + roadmap to ML/API/FE/DB/BI/Cloud
+---
 
-Emphasises EU-grade practices: reproducibility, GDPR awareness, deterministic outputs
+## 🧑‍💼 Interview pitch
 
-📜 Data & License
-Dataset: Kaggle Sample Superstore (public demo dataset)
+- Built a **one-command retail analytics app** that standardises messy CSVs and produces stakeholder-ready HTML reports  
+- Shows **clear product evolution**: toggled enhancements (1.1) + roadmap to ML/API/FE/DB/BI/Cloud  
+- Emphasises **EU-grade practices**: reproducibility, GDPR awareness, deterministic outputs  
 
-Intended for learning & portfolio use, not production
+---
 
-License: MIT
+## 📜 Data & License
+
+- Dataset: Kaggle *Sample Superstore* (public demo dataset)  
+- Intended for **learning & portfolio use**, not production  
+- License: MIT
