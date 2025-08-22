@@ -1,0 +1,11 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Sales EDA Report</title>
+<style>body{font-family:Arial;margin:24px} .kpi{display:flex;gap:24px;margin:12px 0 24px}
+.kpi div{background:#f6f8fa;padding:12px 16px;border-radius:8px} img{max-width:100%;border:1px solid #eee;border-radius:6px}
+.fig{margin:16px 0 24px} h1,h2{color:#2c3e50}</style></head><body>
+<h1>Sales EDA Report</h1><p>Generated at: {{ generated_at }}</p>
+<h2>Overview</h2><div class="kpi"><div><b>Total revenue:</b> {{ total_revenue }}</div>
+<div><b>Total orders:</b> {{ total_orders }}</div><div><b>Avg order value:</b> {{ aov }}</div></div>
+<h2>Monthly Revenue</h2><div class="fig"><img src="figures/monthly_revenue.png"></div>
+<h2>Category Breakdown</h2><div class="fig"><img src="figures/category_revenue.png"></div>
+<h2>Price vs Quantity</h2><div class="fig"><img src="figures/price_vs_quantity.png"></div>
+<footer>Sales Forecast MVP 1.0 • {{ footer_note }}</footer></body></html>
