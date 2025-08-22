@@ -1,7 +1,7 @@
 # Sales Forecast System
 
 A full‑stack retail analytics MVP built on Kaggle’s *Superstore* dataset.  
-Scope: Python EDA today (v1.0) with a clear path to forecasting, APIs, frontend, database logging, BI, and Azure deployment.
+Scope: Python EDA(v1.0) with a clear path to forecasting, APIs, frontend, database logging, BI, and Azure deployment.
 
 ---
 
@@ -109,18 +109,24 @@ Infra: Azure App Service/Container Apps + Azure Database for PostgreSQL + Vercel
 
 ---
 
-## Project structure
+## 📂 Project structure
 
 ```text
 .
-├─ data/                # Superstore.csv (not committed)
-├─ reports/             # Generated artefacts (gitignored)
+├─ assets/              # Screenshots used in README (KPI, Monthly, Category)
+├─ data/                # Input data (Superstore.csv - not committed to Git)
+├─ reports/             # Generated HTML reports (gitignored)
 ├─ src/
-│  └─ eda_v1.0.py       # Main app (flags included, default OFF)
-├─ scripts/             # Optional helpers: run_eda.sh / .ps1 / .bat
-├─ requirements.txt
-└─ README.md
-```
+│  └─ eda_v1.0.py       # Main analysis script (flags included, default OFF)
+├─ scripts/             # Helper scripts for quick run
+│  ├─ run_eda.sh        # macOS/Linux helper
+│  ├─ run_eda.ps1       # Windows PowerShell helper
+├─ .github/
+│  └─ workflows/
+│     └─ smoke.yml      # Minimal CI (import + dependency check)
+├─ requirements.txt     # Python dependencies
+├─ LICENSE              # MIT License
+└─ README.md            # Project documentation (this file)
 
 ---
 
