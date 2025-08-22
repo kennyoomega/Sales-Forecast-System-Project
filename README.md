@@ -127,6 +127,7 @@ Infra: Azure App Service/Container Apps + Azure Database for PostgreSQL + Vercel
 ├─ requirements.txt     # Python dependencies
 ├─ LICENSE              # MIT License
 └─ README.md            # Project documentation (this file)
+```
 
 ---
 
