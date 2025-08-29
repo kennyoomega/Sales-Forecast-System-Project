@@ -1,37 +1,53 @@
-# Sales Forecast System
+# Sales Forecast System (v1.1 — Enhanced EDA)
 
-A full‑stack retail analytics MVP built on Kaggle’s *Superstore* dataset.  
-Scope: Python EDA(v1.0) with a clear path to forecasting, APIs, frontend, database logging, BI, and Azure deployment.
-
----
-
-## What’s in v1.0 (MVP)
-
-- Schema normalisation for Superstore fields (`Order Date`, `Sales`, `Quantity`, `Category`, …)
-- KPIs: Total Revenue, Total Orders, Average Order Value (order‑level where possible)
-- Charts: Monthly revenue trend; Revenue by category
-- Deliverable: lightweight HTML report saved to `reports/eda_report.html`
-- Feature flags are pre‑wired (default OFF) so 1.1+ unlocks without refactor
+A full-stack retail analytics MVP built on Kaggle’s *Superstore* dataset.  
+**New in v1.1:** enhanced EDA with outlier handling, weekly trends, Top-N subcategories, price–quantity scatter, profit analysis, and geo breakdown.  
+Scope: Python EDA → forecasting → API → frontend → database logging → BI → Azure deployment.
 
 ---
 
-## 🖼️ Screenshots
+## ✨ What’s new in v1.1
+
+Compared with **v1.0 (MVP)**, this version adds more **real-world retail analytics** features:
+
+- 🧹 **Outlier handling (Winsorisation)** — trim extreme Sales/Profit values  
+- 📅 **Weekly revenue trend** — capture short-term seasonality  
+- 🏆 **Top-N sub-categories** — see which product lines drive revenue  
+- 📈 **Price vs Quantity scatter** — check unit price vs order size (sampled)  
+- 💰 **Profit contribution & margins** — revenue ≠ profit; now both are shown  
+- 🌍 **Geo-level revenue** — top regions/states/cities by revenue  
+
+👉 All enhancements are toggleable flags — you can run a light MVP report or a full extended analysis with one command.
+
+---
+
+## 🖼️ Screenshots (v1.1)
 
 ![KPI cards](assets/kpi.png)
 ![Monthly revenue](assets/monthly_revenue.png)
-![Category revenue](assets/category_revenue.png)
+![Weekly revenue](assets/weekly_revenue.png)
+![Top subcategories](assets/top_subcategories.png)
+![Profit contribution](assets/profit_contribution.png)
 
 ---
 
-## Quickstart
+## Quickstart (v1.1)
 
 ### Windows (PowerShell)
 ```powershell
 python -m venv venv
-.venv\Scripts\Activate.ps1
+.\venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements.txt
-python src\eda_v1.0.py --input data\Superstore.csv --outdir reports --title "Retail EDA — MVP 1.0"
+
+# Minimal (KPIs + Monthly + Category)
+python src\eda_v1.1.py --input data\Superstore.csv --outdir reports --title "Retail EDA — MVP 1.1"
+
+# Full feature (all flags ON)
+python src\eda_v1.1.py --input data\Superstore.csv --outdir reports --title "Retail EDA — MVP 1.1" `
+  --enable-weekly 1 --enable-subcat 1 --enable-priceqty 1 --enable-profit 1 --enable-geo 1 `
+  --winsor-pct 0.01 --top-n 10 --sample-n 2000
+
 ```
 
 ### macOS / Linux
@@ -40,36 +56,25 @@ python -m venv venv
 source venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
-python src/eda_v1.0.py --input data/Superstore.csv --outdir reports --title "Retail EDA — MVP 1.0"
+
+# Minimal
+python src/eda_v1.1.py --input data/Superstore.csv --outdir reports --title "Retail EDA — MVP 1.1"
+
+# Full feature
+python src/eda_v1.1.py --input data/Superstore.csv --outdir reports --title "Retail EDA — MVP 1.1" \
+  --enable-weekly 1 --enable-subcat 1 --enable-priceqty 1 --enable-profit 1 --enable-geo 1 \
+  --winsor-pct 0.01 --top-n 10 --sample-n 2000
+
 ```
 
-Output: open `reports/eda_report.html` in your browser.
-
----
-
-## Optional: unlock 1.1 features
-
-These are implemented behind flags (default OFF) to keep v1.0 minimal.
-
-```bash
-python src/eda_v1.0.py --input data/Superstore.csv --outdir reports   --enable-subcat 1 --enable-priceqty 1 --enable-profit 1   --enable-geo 1 --enable-weekly 1 --winsor-pct 0.01
-```
-
-**Flag reference**
-
-- `--enable-subcat` — Top‑N sub‑categories by revenue
-- `--enable-priceqty` — Unit price vs quantity scatter (sampled)
-- `--enable-profit` — Profit margin / contribution charts (if `Profit` exists)
-- `--enable-geo` — Top regions (auto‑selects State/City/Region)
-- `--enable-weekly` — Weekly revenue trend
-- `--winsor-pct` — Outlier clipping (e.g., `0.01` trims 1% tails)
+Output: open reports/eda_report_1_1.html in your browser.
 
 ---
 
 ## Roadmap (iteration plan)
 
 - [x] **1.0 — MVP**: Normalise CSV → KPIs → Monthly & Category charts → HTML report
-- [ ] **1.1 — Enhanced EDA**: Winsorisation, weekly/monthly aggregation, Top‑N, geo, profit contribution
+- [x] **1.1 — Enhanced EDA**: Winsorisation, weekly/monthly aggregation, Top‑N, geo, profit contribution
 - [ ] **1.2 — Forecasting**: Monthly aggregate → RF/XGBoost → *Actual vs Forecast* chart → save model
 - [ ] **1.3 — FastAPI**: `/predict` endpoint returning JSON forecasts
 - [ ] **1.4 — Next.js**: horizon input → call API → render charts
@@ -82,8 +87,8 @@ python src/eda_v1.0.py --input data/Superstore.csv --outdir reports   --enable-s
 
 ## Architecture (current → target)
 
-**Now (1.0)**  
-CSV → Normalise → KPIs & charts → HTML report
+**Now (1.1)**  
+CSV → Normalise → KPIs + Charts (+weekly, TopN, profit, geo) → HTML report
 
 **Target**  
 ```text
@@ -102,10 +107,10 @@ Infra: Azure App Service/Container Apps + Azure Database for PostgreSQL + Vercel
 
 ## Project highlights
 
-- One‑command analytics: standardises messy CSVs and exports a stakeholder‑ready HTML report.
-- Clear evolution from EDA to a production‑style stack (ML → API → frontend → DB/BI → cloud).
-- Reproducible & lightweight: pinned Python deps; no external services for v1.0.
-- EU‑friendly defaults: runs locally; report excludes personal data; Azure EU region in deployment plan.
+- One-command analytics: standardises messy CSVs and exports a stakeholder-ready HTML report
+- Clear evolution from EDA to a production-style stack (ML → API → frontend → DB/BI → cloud)
+- Reproducible & lightweight: pinned Python deps; no external services for v1.0/1.1
+- EU-friendly defaults: runs locally; report excludes personal data; Azure EU region in deployment plan
 
 ---
 
@@ -113,11 +118,12 @@ Infra: Azure App Service/Container Apps + Azure Database for PostgreSQL + Vercel
 
 ```text
 .
-├─ assets/              # Screenshots used in README (KPI, Monthly, Category)
+├─ assets/              # Screenshots used in README (KPI, Weekly, TopN, Profit)
 ├─ data/                # Input data (Superstore.csv - not committed to Git)
 ├─ reports/             # Generated HTML reports (gitignored)
 ├─ src/
-│  └─ eda_v1.0.py       # Main analysis script (flags included, default OFF)
+│  ├─ eda_v1.0.py       # v1.0 script (MVP)
+│  └─ eda_v1.1.py       # v1.1 script (Enhanced EDA, flags included)
 ├─ scripts/             # Helper scripts for quick run
 │  ├─ run_eda.sh        # macOS/Linux helper
 │  ├─ run_eda.ps1       # Windows PowerShell helper
@@ -126,7 +132,8 @@ Infra: Azure App Service/Container Apps + Azure Database for PostgreSQL + Vercel
 │     └─ smoke.yml      # Minimal CI (import + dependency check)
 ├─ requirements.txt     # Python dependencies
 ├─ LICENSE              # MIT License
-└─ README.md            # Project documentation (this file)
+└─ README.md            # Project documentation
+
 ```
 
 ---
