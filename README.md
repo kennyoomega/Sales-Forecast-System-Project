@@ -27,7 +27,7 @@ Compared with **v1.0 (MVP)**, this version adds more **real-world retail analyti
 ![Monthly revenue](assets/monthly_revenue.png)
 ![Weekly revenue](assets/weekly_revenue.png)
 ![Top subcategories](assets/top_subcategories.png)
-![Profit contribution](assets/profit_contribution.png)
+![Profit contribution](assets/profit_contribution_by_category.png)
 
 ---
 
