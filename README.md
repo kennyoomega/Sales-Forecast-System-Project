@@ -28,7 +28,10 @@ Compared with **v1.1 (Enhanced EDA)**, this version adds **predictive capability
 
 ## 🖼️ Screenshots (v1.2)
 
+**RandomForest (baseline)** 
 ![Forecast vs Actual(RF)](assets/forecast_vs_actual(RF).png)
+
+**XGBoost (boosted trees)**
 ![Forecast vs Actual(XGBoost)](assets/forecast_vs_actual(XG).png)
 
 ---
