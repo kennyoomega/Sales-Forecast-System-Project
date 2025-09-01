@@ -1,6 +1,7 @@
 # Sales Forecast System (v1.2 — Forecasting)
 
 A full-stack retail analytics MVP built on Kaggle’s *Superstore* dataset.  
+
 **New in v1.2:** first forecasting module. Monthly sales aggregated, lag features engineered, RandomForest / XGBoost trained, *Actual vs Forecast* chart generated, and model persisted for future API use.  
 
 (Supports both RandomForest (baseline) and XGBoost (boosted trees).
@@ -9,7 +10,7 @@ Forecast results are visualized as Actual vs Forecast charts for quick compariso
 
 Scope: Python EDA → forecasting → API → frontend → database logging → BI → Azure deployment.
 
-## ⚡ Note: This project is built on a retail dataset (Superstore). However, the **pipeline design (SQL → ML forecasting → BI dashboards → Azure deployment)** is domain-agnostic and can be directly applied to **banking KPI monitoring, credit risk scoring, or industrial forecasting**.  
+⚡ Note: This project is built on a retail dataset (Superstore). However, the **pipeline design (SQL → ML forecasting → BI dashboards → Azure deployment)** is domain-agnostic and can be directly applied to **banking KPI monitoring, credit risk scoring, or industrial forecasting**.  
 
 
 ---
