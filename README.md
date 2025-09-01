@@ -1,37 +1,39 @@
-# Sales Forecast System (v1.1 — Enhanced EDA)
+# Sales Forecast System (v1.2 — Forecasting)
 
 A full-stack retail analytics MVP built on Kaggle’s *Superstore* dataset.  
-**New in v1.1:** enhanced EDA with outlier handling, weekly trends, Top-N subcategories, price–quantity scatter, profit analysis, and geo breakdown.  
+**New in v1.2:** first forecasting module. Monthly sales aggregated, lag features engineered, RandomForest / XGBoost trained, *Actual vs Forecast* chart generated, and model persisted for future API use.  
+
+(Supports both RandomForest (baseline) and XGBoost (boosted trees).
+The choice is controlled via --model {rf|xgb}, with artifacts saved separately under reports/models/.
+Forecast results are visualized as Actual vs Forecast charts for quick comparison.)
+
 Scope: Python EDA → forecasting → API → frontend → database logging → BI → Azure deployment.
 
 ---
 
-## ✨ What’s new in v1.1
+## ✨ What’s new in v1.2
 
-Compared with **v1.0 (MVP)**, this version adds more **real-world retail analytics** features:
+Compared with **v1.1 (Enhanced EDA)**, this version adds **predictive capability**:
 
-- 🧹 **Outlier handling (Winsorisation)** — trim extreme Sales/Profit values  
-- 📅 **Weekly revenue trend** — capture short-term seasonality  
-- 🏆 **Top-N sub-categories** — see which product lines drive revenue  
-- 📈 **Price vs Quantity scatter** — check unit price vs order size (sampled)  
-- 💰 **Profit contribution & margins** — revenue ≠ profit; now both are shown  
-- 🌍 **Geo-level revenue** — top regions/states/cities by revenue  
+- ⏳ **Monthly aggregation** — sales resampled by month  
+- 🔁 **Lag features** — past 3 months’ sales as predictors  
+- 🌲 **RandomForest forecasting** — baseline model  
+- ⚡ **XGBoost forecasting** — optional via `--model xgb`  
+- 📊 **Actual vs Forecast chart** — visual side-by-side comparison  
+- 💾 **Model persistence** — saved in `reports/models/` for FastAPI integration  
 
-👉 All enhancements are toggleable flags — you can run a light MVP report or a full extended analysis with one command.
-
----
-
-## 🖼️ Screenshots (v1.1)
-
-![KPI cards](assets/kpi.png)
-![Monthly revenue](assets/monthly_revenue.png)
-![Weekly revenue](assets/weekly_revenue.png)
-![Top subcategories](assets/top_subcategories.png)
-![Profit contribution](assets/profit_contribution_by_category.png)
+👉 This marks the transition from *descriptive analytics* → *predictive modeling*.
 
 ---
 
-## Quickstart (v1.1)
+## 🖼️ Screenshots (v1.2)
+
+![Forecast vs Actual(RF)](assets/forecast_vs_actual(RF).png)
+![Forecast vs Actual(XGBoost)](assets/forecast_vs_actual(XG).png)
+
+---
+
+## Quickstart (v1.2)
 
 ### Windows (PowerShell)
 ```powershell
@@ -40,13 +42,15 @@ python -m venv venv
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 
-# Minimal (KPIs + Monthly + Category)
-python src\eda_v1.1.py --input data\Superstore.csv --outdir reports --title "Retail EDA — MVP 1.1"
+# Run with RandomForest (default)
+python src\eda_v1.2.py --input data\Superstore.csv --outdir reports --title "Retail EDA — MVP 1.2"
 
-# Full feature (all flags ON)
-python src\eda_v1.1.py --input data\Superstore.csv --outdir reports --title "Retail EDA — MVP 1.1" `
-  --enable-weekly 1 --enable-subcat 1 --enable-priceqty 1 --enable-profit 1 --enable-geo 1 `
-  --winsor-pct 0.01 --top-n 10 --sample-n 2000
+# Run with XGBoost
+python src\eda_v1.2.py --input data\Superstore.csv --outdir reports --title "Retail EDA — MVP 1.2 (XGBoost)" --model xgb
+
+# Run with longer test horizon (last 6 months)
+python src\eda_v1.2.py --input data\Superstore.csv --outdir reports --title "Retail EDA — MVP 1.2 (XGB, 6m test)" --model xgb --horizon 6
+
 
 ```
 
@@ -57,17 +61,17 @@ source venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 
-# Minimal
-python src/eda_v1.1.py --input data/Superstore.csv --outdir reports --title "Retail EDA — MVP 1.1"
+# Run with RandomForest
+python src/eda_v1.2.py --input data/Superstore.csv --outdir reports --title "Retail EDA — MVP 1.2"
 
-# Full feature
-python src/eda_v1.1.py --input data/Superstore.csv --outdir reports --title "Retail EDA — MVP 1.1" \
-  --enable-weekly 1 --enable-subcat 1 --enable-priceqty 1 --enable-profit 1 --enable-geo 1 \
-  --winsor-pct 0.01 --top-n 10 --sample-n 2000
+# Run with XGBoost
+python src/eda_v1.2.py --input data/Superstore.csv --outdir reports --title "Retail EDA — MVP 1.2 (XGBoost)" --model xgb
+
 
 ```
 
-Output: open reports/eda_report_1_1.html in your browser.
+Output: open reports/eda_report_1_2.html in your browser.
+Model saved in: reports/models/.
 
 ---
 
@@ -75,7 +79,7 @@ Output: open reports/eda_report_1_1.html in your browser.
 
 - [x] **1.0 — MVP**: Normalise CSV → KPIs → Monthly & Category charts → HTML report
 - [x] **1.1 — Enhanced EDA**: Winsorisation, weekly/monthly aggregation, Top‑N, geo, profit contribution
-- [ ] **1.2 — Forecasting**: Monthly aggregate → RF/XGBoost → *Actual vs Forecast* chart → save model
+- [x] **1.2 — Forecasting**: Monthly aggregate → RF/XGBoost → *Actual vs Forecast* chart → save model
 - [ ] **1.3 — FastAPI**: `/predict` endpoint returning JSON forecasts
 - [ ] **1.4 — Next.js**: horizon input → call API → render charts
 - [ ] **1.5 — PostgreSQL**: store forecasts & request logs
@@ -87,8 +91,8 @@ Output: open reports/eda_report_1_1.html in your browser.
 
 ## Architecture (current → target)
 
-**Now (1.1)**  
-CSV → Normalise → KPIs + Charts (+weekly, TopN, profit, geo) → HTML report
+**Now (1.2)**
+CSV → Normalise → KPIs + Charts + Forecast (RF/XGB) → HTML report + Model.pkl
 
 **Target**  
 ```text
@@ -107,10 +111,10 @@ Infra: Azure App Service/Container Apps + Azure Database for PostgreSQL + Vercel
 
 ## Project highlights
 
-- One-command analytics: standardises messy CSVs and exports a stakeholder-ready HTML report
-- Clear evolution from EDA to a production-style stack (ML → API → frontend → DB/BI → cloud)
-- Reproducible & lightweight: pinned Python deps; no external services for v1.0/1.1
-- EU-friendly defaults: runs locally; report excludes personal data; Azure EU region in deployment plan
+- Demonstrates evolution from descriptive → predictive analytics
+- Supports both RandomForest and XGBoost
+- Model persistence ensures compatibility with APIs/DBs
+- Stakeholder-ready reports + ML outputs in one package
 
 ---
 
@@ -118,21 +122,25 @@ Infra: Azure App Service/Container Apps + Azure Database for PostgreSQL + Vercel
 
 ```text
 .
-├─ assets/              # Screenshots used in README (KPI, Weekly, TopN, Profit)
-├─ data/                # Input data (Superstore.csv - not committed to Git)
-├─ reports/             # Generated HTML reports (gitignored)
-├─ src/
-│  ├─ eda_v1.0.py       # v1.0 script (MVP)
-│  └─ eda_v1.1.py       # v1.1 script (Enhanced EDA, flags included)
-├─ scripts/             # Helper scripts for quick run
-│  ├─ run_eda.sh        # macOS/Linux helper
-│  ├─ run_eda.ps1       # Windows PowerShell helper
 ├─ .github/
 │  └─ workflows/
 │     └─ smoke.yml      # Minimal CI (import + dependency check)
+├─ assets/              # Screenshots used in README (KPI, Weekly, Forecast, etc.)
+├─ data/                # Input data (Superstore.csv - not committed to Git)
+├─ reports/             # Generated reports, figures, models (gitignored)
+│  ├─ figures/          # All PNG charts
+│  └─ models/           # Saved ML models (.pkl)
+├─ scripts/
+│  ├─ run_eda.sh        # macOS/Linux helper
+│  ├─ run_eda.ps1       # Windows PowerShell helper
+├─ src/
+│  ├─ eda_v1.0.py       # v1.0 script (MVP)
+│  ├─ eda_v1.1.py       # v1.1 script (Enhanced EDA)
+│  └─ eda_v1.2.py       # v1.2 script (Forecasting with RF/XGB)
 ├─ requirements.txt     # Python dependencies
 ├─ LICENSE              # MIT License
 └─ README.md            # Project documentation
+
 
 ```
 

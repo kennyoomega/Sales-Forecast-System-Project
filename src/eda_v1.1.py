@@ -159,9 +159,11 @@ def write_html_report(outdir: Path, title: str, kpi: dict, fig_paths: list[str],
       h1 { margin-bottom: 8px; }
       .meta { color:#666; margin-bottom: 16px; }
       .kpis { display:flex; gap:16px; margin: 16px 0 24px; }
-      .kpi { padding:12px 16px; border:1px solid #eee; border-radius:12px; background:#fafafa; }
-      .kpi span { display:block; font-size:12px; color:#666; }
-      .kpi strong { font-size:20px; }
+      .kpi {flex:1;display:flex;justify-content:space-between;align-items:center;
+      padding:16px;border:1px solid #eee;border-radius:12px;background:#fafafa;
+      box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+      .kpi span{font-size:14px;color:#666;margin-right:8px;}
+      .kpi strong{font-size:20px;font-weight:600;}
       .fig { margin: 18px 0; }
       img { max-width: 100%; height:auto; border: 1px solid #eee; border-radius: 8px; }
       pre { background:#f6f8fa; padding:12px; border-radius:8px; overflow:auto; }
