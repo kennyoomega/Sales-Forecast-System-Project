@@ -33,7 +33,10 @@ Scope: Python EDA → forecasting → API → frontend → database logging → 
 
 (Add screenshots to `assets/` and embed here, e.g.)
 
+**Frontend UI (Next.js app with model selector)**
 ![Frontend UI](assets/frontend_ui.png)
+
+**API Docs (FastAPI Swagger UI)**
 ![API Docs](assets/api_swagger.png)
 
 ---
@@ -52,7 +55,9 @@ uvicorn api_v1_3:app --app-dir src --reload --port 8000
 ```
 
 Visit:
+
 · Docs: http://127.0.0.1:8000/docs
+
 · Example: http://127.0.0.1:8000/predict?lag1=30000&lag2=28000&lag3=25000&model=rf
 
 ### 3. Start Next.js frontend (v1.4)
@@ -63,7 +68,9 @@ npm run dev
 ```
 
 · App runs at http://localhost:3000
+
 · Make sure .env.local contains:
+
 ```bash
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
 ```
