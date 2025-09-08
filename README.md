@@ -23,7 +23,11 @@ Scope: Python EDA → forecasting → API → frontend → database logging → 
 
 - Frontend UI with forecast + logs
 
+![Frontend with Logs](assets/frontend_with_logs.png)
+
 - API Swagger UI showing `/logs/latest`
+
+![API Docs Logs](assets/api_swagger_logs.png) 
 
 ---
 
