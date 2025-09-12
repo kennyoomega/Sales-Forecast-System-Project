@@ -1,82 +1,78 @@
-# Sales Forecast System (v1.5 — FastAPI + Frontend + PostgreSQL Logging)
+# Sales Forecast System (v1.6 — Power BI Dashboard)
 
 A full-stack retail analytics MVP built on Kaggle’s Superstore dataset.
 
-**New in v1.5:** added PostgreSQL logging — every forecast request (model, lags, prediction) is now stored in a relational database for audit, monitoring, and future BI dashboards. 
+**New in v1.6:** integrated **Power BI dashboards** — PostgreSQL logs (from v1.5) are now visualized in interactive reports with KPIs, trend lines, model mix, and detailed logs.
 
-Scope: Python EDA → forecasting → API → frontend → database logging → BI → Azure deployment.
+Scope: Python EDA → forecasting → API → frontend → database logging → **BI dashboards** → Azure deployment.
+---
+
+## ✨ What’s new in v1.6
+
+### Compared with v1.5 (FastAPI + DB logging), this version v1.6 adds visualization
+- 📊 Power BI integration — connected directly to PostgreSQL `forecast_logs`
+- 📈 KPIs — Total Predictions, Last Prediction value
+- ⏳ Trend line — prediction values over time (continuous axis, average of predictions)
+- 🥧 Donut chart — model usage ratio (RF vs XGB)
+- 📋 Log table — last 20 predictions with lags & results
+- 🎛️ Slicer — interactive filter to switch between RF / XGB
+---
+
+## 🖼️ Screenshots (v1.6)
+
+- **Dashboard Overview** (KPI cards + trend + model ratio + logs)
+
+![Dashboard Overview](assets/pbi_overview.png)
+
+- **Model Ratio (RF vs XGB)**
+
+![Model Ratio](assets/pbi_model_ratio.png) 
+
+- **Prediction Logs Table**
+
+![Prediction Logs Table](assets/pbi_logs_table.png) 
 
 ---
 
-## ✨ What’s new in v1.5
+## QQuickstart (v1.6)
 
-### Compared with v1.3/v1.4 (FastAPI + Frontend), this version v1.5 adds persistence
-- 🗄️ PostgreSQL integration — requests & predictions logged into a forecast_logs table
-- 📝 Stored fields: model, lag1/lag2/lag3, prediction, created_at
-- 🔎 `/logs/latest` endpoint — fetch recent logs directly from API
-- 🎛️ Frontend update — new “Show Logs” button to view recent predictions in a table
-- 🔒 Keeps full history → ready for Power BI (v1.6) and cloud deploy (v1.7)
-
----
-
-## 🖼️ Screenshots (v1.5)
-
-- Frontend UI with forecast + logs
-
-![Frontend with Logs](assets/frontend_with_logs.png)
-
-- API Swagger UI showing `/logs/latest`
-
-![API Docs Logs](assets/api_swagger_logs.png) 
-
----
-
-## Quickstart (v1.5)
-
-### 1. Train & save models (v1.2)
+### 1. Ensure DB logging is active (from v1.5)
 ```powershell
-# RandomForest
-python src/eda_v1.2.py --input data/Superstore.csv --outdir reports --title "Retail EDA — MVP 1.2"
 
-# XGBoost
-python src/eda_v1.2.py --input data/Superstore.csv --outdir reports --title "Retail EDA — MVP 1.2 (XGB)" --model xgb
-```
-
-### 2. Setup PostgreSQL (v1.5)
-```bash
--- Create database
-CREATE DATABASE salesdb;
-
--- Run init_db() once to create tables
-python -c "from src.db import init_db; init_db()"
-```
-
-
-### 3. Start FastAPI backend (with DB logging)
-```bash
 uvicorn src.api_v1_5:app --reload --port 8000
+
 ```
 
-Endpoints:
+Forecast requests will be logged to PostgreSQL in the `forecast_logs` table.
 
-· `/predict` → forecast + log result
+### 2. Connect Power BI to PostgreSQL
 
-· `/logs/latest` → fetch recent N logs
+- Open Power BI Desktop → Get Data → PostgreSQL database
 
-· `/docs` → Swagger auto-docs
+- Server: `localhost`, Database: `salesdb`
 
-### 4. Start Next.js frontend (v1.4+v1.5)
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Runs at: http://localhost:3000
+- Select table: `public.forecast_logs`
 
-Make sure `.env.local` contains:
-```bash
-NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
-```
+- Load data (optionally via Power Query for type casting)
+
+### 3. Build dashboard visuals
+
+- Card → Total Predictions (`id` count)
+
+- Card → Last Prediction (`prediction` max by created_at)
+
+- Line chart → X=`created_at`, Y=`prediction (Average)`
+
+- Donut chart → Legend=`model`, Values=`id` count
+
+- Table → Columns: created_at, model, lags, prediction
+
+- Slicer → model (single select, RF vs XGB)
+
+### 4. Save and export
+
+Save the .pbix file locally.
+
 ---
 
 ## Roadmap (iteration plan)
@@ -87,7 +83,7 @@ NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
 - [x] **1.3 — FastAPI**: `/predict` endpoint returning JSON forecasts
 - [x] **1.4 — Next.js**: horizon input → call API → render charts
 - [x] **1.5 — PostgreSQL**: store forecasts & request logs
-- [ ] **1.6 — Power BI**: direct PG connection for KPI dashboards
+- [x] **1.6 — Power BI**: direct PG connection for KPI dashboards
 - [ ] **1.7 — Cloud deployment**: Azure (API + DB, EU region), Vercel/Azure SWA (frontend)
 - [ ] **Final**: screenshots, architecture diagram, CI/CD, online demo
 
@@ -95,8 +91,8 @@ NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
 
 ## Architecture (current → target)
 
-**Now (v1.5)**
-CSV → Forecast (RF/XGB) → Model.pkl → FastAPI API → Next.js frontend → **PostgreSQL logs**
+**Now (v1.6)**
+CSV → Forecast (RF/XGB) → Model.pkl → FastAPI API → Next.js frontend → PostgreSQL logs → **Power BI dashboards**
 
 **Target**  
 ```text
@@ -115,11 +111,11 @@ Infra: Azure App Service/Container Apps + Azure Database for PostgreSQL + Vercel
 
 ## Project highlights
 
-- End-to-end pipeline: from raw CSV → EDA → forecasting → API → frontend → DB logging
-- Supports both RandomForest (baseline) and XGBoost, with reloadable saved models
-- FastAPI backend now logs every forecast to PostgreSQL
-- Next.js frontend extended with logs table for transparency
-- Ready for BI dashboards (Power BI v1.6) and enterprise-style cloud deployment (Azure v1.7)
+- End-to-end pipeline: raw CSV → EDA → ML forecasting → API → frontend → DB logging → BI dashboards
+- PostgreSQL provides persistence; Power BI adds professional-grade visualization
+- KPI cards, trends, model usage ratio, and detailed logs all in one view
+- Dashboard design follows business standards: top KPIs → trends → ratios → detail table → slicer filter
+- Ready for cloud deployment with Azure + Vercel
 
 ---
 
@@ -130,7 +126,7 @@ Infra: Azure App Service/Container Apps + Azure Database for PostgreSQL + Vercel
 ├─ .github/
 │  └─ workflows/
 │     └─ smoke.yml      # Minimal CI (import + dependency check)
-├─ assets/              # Screenshots used in README (KPI, Weekly, Forecast, etc.)
+├─ assets/              # Screenshots (Overview, Model Ratio, Logs Table)
 ├─ data/                # Input data (Superstore.csv - not committed to Git)
 ├─ frontend/            # v1.4 Next.js frontend app
 │  ├─ app/
@@ -148,9 +144,9 @@ Infra: Azure App Service/Container Apps + Azure Database for PostgreSQL + Vercel
 │  ├─ eda_v1.1.py       # v1.1 script (Enhanced EDA)
 │  └─ eda_v1.2.py       # v1.2 script (Forecasting with RF/XGB)
 │  └─ api_v1_3.py       # v1.3 FastAPI backend
-│  ├─ api_v1_5.py         # v1.5 FastAPI backend (DB logging)
-│  └─ db.py               # SQLAlchemy models + Session
-├─ requirements.txt       # Python dependencies (now includes psycopg2, sqlalchemy, python-dotenv)
+│  ├─ api_v1_5.py       # v1.5 FastAPI backend (DB logging)
+│  └─ db.py             # SQLAlchemy models + Session
+├─ requirements.txt     # Python dependencies (now includes psycopg2, sqlalchemy, python-dotenv)
 ├─ LICENSE              # MIT License
 └─ README.md            # Project documentation
 
