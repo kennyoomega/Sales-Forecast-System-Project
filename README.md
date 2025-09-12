@@ -5,6 +5,7 @@ A full-stack retail analytics MVP built on Kaggle’s Superstore dataset.
 **New in v1.6:** integrated **Power BI dashboards** — PostgreSQL logs (from v1.5) are now visualized in interactive reports with KPIs, trend lines, model mix, and detailed logs.
 
 Scope: Python EDA → forecasting → API → frontend → database logging → **BI dashboards** → Azure deployment.
+
 ---
 
 ## ✨ What’s new in v1.6
@@ -34,7 +35,7 @@ Scope: Python EDA → forecasting → API → frontend → database logging → 
 
 ---
 
-## QQuickstart (v1.6)
+## Quickstart (v1.6)
 
 ### 1. Ensure DB logging is active (from v1.5)
 ```powershell
