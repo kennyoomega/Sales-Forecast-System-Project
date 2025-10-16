@@ -85,7 +85,7 @@ Save the .pbix file locally.
 - [x] **1.4 — Next.js**: horizon input → call API → render charts
 - [x] **1.5 — PostgreSQL**: store forecasts & request logs
 - [x] **1.6 — Power BI**: direct PG connection for KPI dashboards
-- [ ] **1.7 — Cloud deployment**: Azure (API + DB, EU region), Vercel/Azure SWA (frontend)
+- [ ] **1.7 — Cloud deployment**: Dockerised FastAPI + PostgreSQL + Next.js (Compose); pushed images to Azure Container Registry; deployed API on Azure Web App for Containers and frontend on Vercel/Azure SWA
 - [ ] **Final**: screenshots, architecture diagram, CI/CD, online demo
 
 ---

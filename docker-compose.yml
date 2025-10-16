@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:15
+    container_name: sf_db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: superstore
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d superstore"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: sf_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg2://admin:admin@db:5432/superstore
+      CORS_ORIGINS: http://localhost:3000
+      AVAILABLE_MODELS: rf,xgb
+      DISABLE_DB_LOGGING: "0"    
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./reports/models:/app/reports/models:ro
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    container_name: sf_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

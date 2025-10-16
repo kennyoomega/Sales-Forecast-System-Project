@@ -3,7 +3,16 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { ThHTMLAttributes, TdHTMLAttributes } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+
 type ModelName = "rf" | "xgb";
+
+type ModelsResponse = {
+  available_models: ModelName[];
+};
+
+type PredictResponse = {
+  prediction: number;
+};
 
 type LogRow = {
   id: number;
@@ -14,6 +23,16 @@ type LogRow = {
   prediction: number;
   created_at: string; // ISO string
 };
+
+// Convert unknown error into a readable message
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
+  }
+}
 
 export default function Home() {
   const [lag1, setLag1] = useState<number>(30000);
@@ -31,17 +50,22 @@ export default function Home() {
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [logErr, setLogErr] = useState<string>("");
 
-  // fetch available models
+  // Fetch available models once on mount
   useEffect(() => {
     fetch(`${API_BASE}/models`)
       .then((r) => r.json())
       .then((d) => {
-        if (Array.isArray(d.available_models) && d.available_models.length) {
-          setAvailable(d.available_models);
-          setModel(d.available_models.includes("rf") ? "rf" : (d.available_models[0] as ModelName));
+        const data = d as ModelsResponse;
+        if (Array.isArray(data.available_models) && data.available_models.length) {
+          setAvailable(data.available_models);
+          setModel(
+            data.available_models.includes("rf") ? "rf" : (data.available_models[0] as ModelName)
+          );
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // Keep defaults if models endpoint fails
+      });
   }, []);
 
   const onPredict = async () => {
@@ -51,10 +75,10 @@ export default function Home() {
       const url = `${API_BASE}/predict?lag1=${lag1}&lag2=${lag2}&lag3=${lag3}&model=${model}`;
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`);
-      const data = await resp.json();
+      const data = (await resp.json()) as PredictResponse;
       setYhat(data.prediction);
-    } catch (e: any) {
-      setErr(e.message || "Request failed");
+    } catch (e: unknown) {
+      setErr(getErrorMessage(e) || "Request failed");
       setYhat(null);
     } finally {
       setLoading(false);
@@ -68,10 +92,10 @@ export default function Home() {
       const url = `${API_BASE}/logs/latest?limit=${logLimit}`;
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`);
-      const data: LogRow[] = await resp.json();
+      const data = (await resp.json()) as LogRow[];
       setLogs(data);
-    } catch (e: any) {
-      setLogErr(e.message || "Failed to fetch logs");
+    } catch (e: unknown) {
+      setLogErr(getErrorMessage(e) || "Failed to fetch logs");
       setLogs([]);
     } finally {
       setLoadingLogs(false);
@@ -240,10 +264,7 @@ function Th({ children, style, ...rest }: ThHTMLAttributes<HTMLTableCellElement>
 /** Accept and forward native <td> props (incl. style) */
 function Td({ children, style, ...rest }: TdHTMLAttributes<HTMLTableCellElement> & { children: ReactNode }) {
   return (
-    <td
-      {...rest}
-      style={{ padding: "10px 12px", fontSize: 13, ...(style || {}) }}
-    >
+    <td {...rest} style={{ padding: "10px 12px", fontSize: 13, ...(style || {}) }}>
       {children}
     </td>
   );
