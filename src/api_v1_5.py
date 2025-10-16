@@ -2,46 +2,40 @@
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
-from typing import Literal, List, Tuple, Optional
+from typing import Literal, List, Tuple
 from pathlib import Path
 from datetime import datetime
 import os
 import joblib
 import numpy as np
 
-# ✅ New Database Module (Core Difference in v1.5)
 from src.db import SessionLocal, ForecastLog, init_db
 
-# ---- App ----
 app = FastAPI(title="Sales Forecast API v1.5 (with DB logging)")
 
-@app.get("/", include_in_schema=False)
-def root():
-    return {"message": "Sales Forecast API v1.5 running", "available_models": list(AVAILABLE.keys())}
-
-@app.head("/", include_in_schema=False)            
-def root_head():
-    
-    return PlainTextResponse("ok")
-
+# ---- Startup: create tables ----
 @app.on_event("startup")
 def _startup():
     init_db()
 
-# ---- CORS ----
-origins = os.getenv(
-    "CORS_ORIGINS",
-    "http://localhost:3000,http://127.0.0.1:3000"
-).split(",")
+# ---- CORS (env-driven) ----
+origins_env = os.getenv("CORS_ORIGINS", "")
+allow_origins = [o.strip() for o in origins_env.split(",") if o.strip()]
+allow_origin_regex = os.getenv("CORS_ORIGIN_REGEX")
+
+print("[CORS] allow_origins =", allow_origins)
+print("[CORS] allow_origin_regex =", allow_origin_regex)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in origins],
+    allow_origins=allow_origins,
+    allow_origin_regex=allow_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ---- Model paths ----
+# ---- Model paths & cache ----
 XGB_PATH = Path("reports/models/sales_forecast_xgb.pkl")
 RF_PATH  = Path("reports/models/sales_forecast_rf.pkl")
 
@@ -98,9 +92,13 @@ def _build_features_as_in_training(
     return np.array(row, dtype=float).reshape(1, -1)
 
 # ---- Routes ----
-@app.get("/")
+@app.get("/", include_in_schema=False)
 def root():
     return {"message": "Sales Forecast API v1.5 running", "available_models": list(AVAILABLE.keys())}
+
+@app.head("/", include_in_schema=False)
+def root_head():
+    return PlainTextResponse("ok")
 
 @app.get("/health")
 def health():
@@ -130,7 +128,6 @@ def predict(
     except Exception:
         yhat = _simple_baseline(lag1, lag2, lag3)
 
-    # ✅ Added database write logic
     logged = False
     db = SessionLocal()
     try:
