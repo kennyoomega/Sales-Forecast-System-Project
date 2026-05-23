@@ -6,7 +6,7 @@ seaborn>=0.13,<0.14
 
 # Machine Learning
 scikit-learn>=1.3,<2
-xgboost>=1.7,<3
+xgboost==1.7.6
 joblib>=1.3,<2
 
 # API (from v1.3 onwards)
