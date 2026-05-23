@@ -22,8 +22,10 @@ SELECT
     unique_customers,
     total_profit,
     profit_margin,
-    LAG(total_sales, 1) OVER (ORDER BY month)    AS lag_1,
-    LAG(total_sales, 2) OVER (ORDER BY month)    AS lag_2,
-    LAG(total_sales, 3) OVER (ORDER BY month)    AS lag_3,
-    EXTRACT(MONTH FROM month)                    AS month_of_year
+    LAG(total_sales, 1) OVER (ORDER BY month)                                    AS lag_1,
+    LAG(total_sales, 2) OVER (ORDER BY month)                                    AS lag_2,
+    LAG(total_sales, 3) OVER (ORDER BY month)                                    AS lag_3,
+    ROUND(AVG(total_sales) OVER (ORDER BY month ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 2) AS rolling_mean_3,
+    ROUND(AVG(total_sales) OVER (ORDER BY month ROWS BETWEEN 5 PRECEDING AND CURRENT ROW), 2) AS rolling_mean_6,
+    EXTRACT(MONTH FROM month)                                                     AS month_of_year
 FROM monthly
