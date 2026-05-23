@@ -1,0 +1,51 @@
+version: 2
+
+models:
+  - name: mart_monthly_sales
+    description: 'Monthly aggregated sales with pre-computed lag features for forecasting'
+    columns:
+      - name: month
+        tests:
+          - unique
+          - not_null
+      - name: total_sales
+        tests:
+          - not_null
+
+  - name: mart_sales_by_category
+    description: 'Revenue and profit by Category and Sub-Category'
+    columns:
+      - name: category
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Furniture', 'Office Supplies', 'Technology']
+      - name: profit_margin_pct
+        tests:
+          - not_null
+
+  - name: mart_sales_by_segment
+    description: 'Monthly sales broken down by customer segment'
+    columns:
+      - name: segment
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Consumer', 'Corporate', 'Home Office']
+
+  - name: mart_sales_by_region
+    description: 'Revenue by region and state with profitability metrics'
+    columns:
+      - name: region
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['East', 'West', 'Central', 'South']
+
+  - name: mart_product_performance
+    description: 'Product-level sales, profit, and ranking within sub-categories'
+    columns:
+      - name: product_id
+        tests:
+          - not_null

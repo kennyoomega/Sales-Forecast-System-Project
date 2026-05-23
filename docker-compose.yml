@@ -29,12 +29,17 @@ services:
       DATABASE_URL: postgresql+psycopg2://admin:admin@db:5432/superstore
       CORS_ORIGINS: http://localhost:3000
       AVAILABLE_MODELS: rf,xgb
-      DISABLE_DB_LOGGING: "0"    
+      DISABLE_DB_LOGGING: "0"
+      # New BigQuery env vars
+      BQ_PROJECT_ID: peppy-ward-497115-k8
+      BQ_DATASET: analytics
+      BQ_KEY_FILE: /run/secrets/bq_key
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - ./reports/models:/app/reports/models:ro
+      - C:\Users\chens\.gcp\sales-forecast-key.json:/run/secrets/bq_key:ro
 
   frontend:
     build:

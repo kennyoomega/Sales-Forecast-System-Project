@@ -5,9 +5,11 @@ from fastapi.responses import PlainTextResponse
 from typing import Literal, List, Tuple
 from pathlib import Path
 from datetime import datetime
+from src.bq_client import query_mart
 import os
 import joblib
 import numpy as np
+import datetime
 
 from src.db import SessionLocal, ForecastLog, init_db
 
@@ -161,3 +163,32 @@ def latest_logs(limit: int = 10):
         ]
     finally:
         db.close()
+
+# --- BigQuery analytics endpoints ---
+@app.get('/analytics/monthly')
+def analytics_monthly(limit: int = 48):
+    try:
+        rows = query_mart('mart_monthly_sales', limit=limit)
+        for r in rows:
+            for k, v in r.items():
+                if isinstance(v, datetime.date):
+                    r[k] = v.isoformat()
+        return {'data': rows, 'source': 'bigquery_mart'}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f'BigQuery unavailable: {e}')
+
+@app.get('/analytics/category')
+def analytics_category():
+    try:
+        rows = query_mart('mart_sales_by_category')
+        return {'data': rows, 'source': 'bigquery_mart'}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f'BigQuery unavailable: {e}')
+
+@app.get('/analytics/region')
+def analytics_region():
+    try:
+        rows = query_mart('mart_sales_by_region')
+        return {'data': rows, 'source': 'bigquery_mart'}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f'BigQuery unavailable: {e}')

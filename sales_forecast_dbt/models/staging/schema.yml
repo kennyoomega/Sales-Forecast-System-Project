@@ -1,0 +1,47 @@
+version: 2
+
+sources:
+  - name: raw
+    database: peppy-ward-497115-k8
+    schema: raw
+    tables:
+      - name: superstore_orders
+        description: 'Raw Superstore retail data, loaded from CSV'
+
+models:
+  - name: stg_superstore_orders
+    description: 'Cleaned and renamed Superstore orders. One row per order line.'
+    columns:
+      - name: row_id
+        description: 'Unique identifier for each order line'
+        tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: 'Order identifier (multiple lines per order)'
+        tests:
+          - not_null
+      - name: order_date
+        tests:
+          - not_null
+      - name: sales
+        description: 'Revenue for this line item in USD'
+        tests:
+          - not_null
+      - name: category
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Furniture', 'Office Supplies', 'Technology']
+      - name: region
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['East', 'West', 'Central', 'South']
+      - name: segment
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Consumer', 'Corporate', 'Home Office']

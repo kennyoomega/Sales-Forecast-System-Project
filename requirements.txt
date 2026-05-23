@@ -20,3 +20,7 @@ alembic>=1.13,<2
 
 # Env loader
 python-dotenv>=1.0,<2
+
+# Dbt-bigquery
+google-cloud-bigquery>=3.0,<4
+db-dtypes>=1.0,<2
