@@ -18,6 +18,9 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 import joblib
 import matplotlib.pyplot as plt
 
+from google.cloud import bigquery
+from google.oauth2 import service_account
+
 # ---- Optional: XGBoost ----
 try:
     from xgboost import XGBRegressor
@@ -60,6 +63,41 @@ except Exception:
 # =========================
 # Data preparation
 # =========================
+def load_from_bigquery_mart(project_id: str = "peppy-ward-497115-k8",
+                             dataset: str = "analytics",
+                             key_file: str = None) -> pd.DataFrame:
+    """
+    Load pre-computed features from mart_monthly_sales in BigQuery.
+    Replaces load_and_monthly_aggregate() + add_lag_features() when source=bigquery.
+    """
+
+    if key_file:
+        creds = service_account.Credentials.from_service_account_file(key_file)
+        client = bigquery.Client(project=project_id, credentials=creds)
+    else:
+        client = bigquery.Client(project=project_id)
+
+    query = f"""
+        SELECT
+            month,
+            total_sales   AS Sales,
+            lag_1,
+            lag_2,
+            lag_3,
+            month_of_year AS month_num,
+            rolling_mean_3 AS roll_mean_3,
+            rolling_mean_6 AS roll_mean_6
+        FROM `{project_id}.{dataset}.mart_monthly_sales`
+        WHERE lag_3 IS NOT NULL
+        ORDER BY month
+    """
+
+    df = client.query(query).to_dataframe()
+    df["month"] = pd.to_datetime(df["month"])
+    df = df.set_index("month")
+    df = df.rename(columns={"month_num": "month"})
+    return df
+
 def load_and_monthly_aggregate(csv_path: Path,
                                date_col: str = "date",
                                target_col: str = "Sales",
@@ -304,11 +342,14 @@ def write_html_report(outdir: Path,
 # =========================
 def main():
     parser = argparse.ArgumentParser(description="EDA v1.2 Monthly Forecast with Baseline & Metrics")
-    parser.add_argument("--input", type=str, required=True, help="Path to input CSV (must contain date & Sales)")
+    parser.add_argument("--input", type=str, required=False, default=None, help="Path to input CSV (must contain date & Sales)")
     parser.add_argument("--date_col", type=str, default="date", help="Date column name (e.g., 'Order Date')")
     parser.add_argument("--target_col", type=str, default="Sales", help="Target column name (e.g., 'Sales')")
     parser.add_argument("--outdir", type=str, default="reports", help="Output directory")
     parser.add_argument("--model", type=str, default="rf", choices=["rf", "xgb"], help="Model: rf or xgb")
+    parser.add_argument("--source", type=str, default="csv", choices=["csv", "bigquery"], help="Data source: csv or bigquery")
+    parser.add_argument("--bq_project", type=str, default="peppy-ward-497115-k8", help="BigQuery project ID")
+    parser.add_argument("--bq_key_file", type=str, default=None, help="Path to GCP service account JSON")
     parser.add_argument("--horizon", type=int, default=3, help="Hold-out horizon months")
     parser.add_argument("--title", type=str, default="Sales Forecast v1.2 — Monthly", help="Report title")
     parser.add_argument("--encoding", type=str, default="utf-8", help="CSV encoding, e.g. utf-8 / cp1252 / latin1")
@@ -319,21 +360,52 @@ def main():
     figs_dir = ensure_dir(outdir / "figures")
     models_dir = ensure_dir(outdir / "models")
 
-    # 1) Load & aggregate monthly
-    ts = load_and_monthly_aggregate(
-        Path(args.input),
-        args.date_col,
-        args.target_col,
-        freq="MS",
-        encoding=args.encoding,
-        sep=args.sep
-    )
-    if len(ts) < args.horizon + 15:
-        raise RuntimeError(f"Time series too short ({len(ts)} points). Need >= horizon+15.")
-
-    # 2) Train & build baseline
+    # 1) Load data
     model_path = models_dir / f"sales_forecast_{args.model}.pkl"
-    model, test_df = train_forecast_model(ts, model_path, model_name=args.model, horizon=args.horizon)
+
+    if args.source == "bigquery":
+        print("[SOURCE] Loading from BigQuery mart_monthly_sales...")
+        df_feat = load_from_bigquery_mart(
+            project_id=args.bq_project,
+            key_file=args.bq_key_file
+        )
+        if len(df_feat) < args.horizon + 5:
+            raise RuntimeError(f"Not enough rows from BigQuery ({len(df_feat)}). Need >= horizon+5.")
+        sp = split_train_test(df_feat, horizon=args.horizon)
+        ts = df_feat["Sales"]
+    else:
+        print("[SOURCE] Loading from CSV...")
+        ts = load_and_monthly_aggregate(
+            Path(args.input),
+            args.date_col,
+            args.target_col,
+            freq="MS",
+            encoding=args.encoding,
+            sep=args.sep
+        )
+        if len(ts) < args.horizon + 15:
+            raise RuntimeError(f"Time series too short ({len(ts)} points). Need >= horizon+15.")
+        df_feat = add_lag_features(ts, n_lags=3)
+        sp = split_train_test(df_feat, horizon=args.horizon)
+
+    # 2) Train
+    if args.model == "xgb":
+        if not _HAS_XGB:
+            raise RuntimeError("XGBoost not installed.")
+        model = train_xgb(sp.X_train, sp.y_train)
+    else:
+        model = train_rf(sp.X_train, sp.y_train)
+
+    preds = model.predict(sp.X_test)
+    joblib.dump(model, model_path)
+
+    test_df = pd.DataFrame(
+        {"Actual": sp.y_test, "Forecast": preds},
+        index=sp.y_test.index
+    )
+    last_year = ts.shift(12).reindex(test_df.index)
+    prev_month = ts.shift(1).reindex(test_df.index)
+    test_df["Baseline"] = last_year.fillna(prev_month)
 
     # 3) Metrics (Baseline vs Model)
     y_true = test_df["Actual"]
