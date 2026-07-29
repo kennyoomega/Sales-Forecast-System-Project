@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from typing import Literal, List, Tuple
 from pathlib import Path
-from datetime import datetime
 from src.bq_client import query_mart
 import os
 import joblib
@@ -121,7 +120,7 @@ def predict(
     if not AVAILABLE:
         raise HTTPException(status_code=500, detail="No models available. Train v1.2 first.")
     if month is None:
-        now = datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
         month = (now.month % 12) + 1
     try:
         est, feat_names = _load_model_and_feature_names(model)
