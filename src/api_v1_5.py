@@ -7,10 +7,13 @@ from pathlib import Path
 from src.bq_client import query_mart
 import os
 import joblib
+import logging
 import numpy as np
 import datetime
 
 from src.db import SessionLocal, ForecastLog, init_db
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Sales Forecast API v1.5 (with DB logging)")
 
@@ -54,9 +57,6 @@ def _get_model(name: Literal["rf", "xgb"]) -> object:
     if name not in _CACHE:
         _CACHE[name] = joblib.load(AVAILABLE[name])
     return _CACHE[name]
-
-def _simple_baseline(l1: float, l2: float, l3: float) -> float:
-    return 0.5 * l1 + 0.3 * l2 + 0.2 * l3
 
 def _load_model_and_feature_names(name: Literal["rf","xgb"]) -> Tuple[object, List[str]]:
     est = _get_model(name)
@@ -126,8 +126,14 @@ def predict(
         est, feat_names = _load_model_and_feature_names(model)
         X = _build_features_as_in_training(lag1, lag2, lag3, month, feat_names)
         yhat = float(est.predict(X)[0])
-    except Exception:
-        yhat = _simple_baseline(lag1, lag2, lag3)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Prediction failed for model '%s'", model)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Prediction failed for model '{model}'."
+        ) from exc
 
     logged = False
     db = SessionLocal()
