@@ -1,0 +1,33 @@
+version: 2
+
+models:
+  - name: int_monthly_sales
+    description: >
+      Monthly sales aggregates shared by analytics marts and forecasting
+      feature models. One row per calendar month.
+    columns:
+      - name: month
+        description: First day of the calendar month.
+        tests:
+          - unique
+          - not_null
+
+      - name: total_sales
+        description: Total sales revenue for the month.
+        tests:
+          - not_null
+
+      - name: total_profit
+        description: Total profit for the month.
+        tests:
+          - not_null
+
+      - name: order_count
+        description: Number of distinct orders in the month.
+        tests:
+          - not_null
+
+      - name: unique_customers
+        description: Number of distinct customers in the month.
+        tests:
+          - not_null
