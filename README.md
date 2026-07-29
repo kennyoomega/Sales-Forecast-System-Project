@@ -1,196 +1,428 @@
-# 🚀 Sales Forecast & Analytics Platform (v1.8 — dbt + BigQuery Analytics Layer)
+# Sales Analytics & Forecasting Platform
 
-A full-stack retail analytics and forecasting platform built on **FastAPI**, **PostgreSQL**, and **Next.js**, fully containerized with **Docker** and deployed across **Render**, **Vercel**, and **Neon Cloud**.
+A containerized end-to-end platform that transforms raw retail order data into tested analytics models and next-month sales forecasts.
 
-The system delivers end-to-end analytics from raw data ingestion to machine learning forecasts, cloud APIs, interactive dashboards, and a production-grade **dbt + BigQuery analytics layer** with full data lineage, testing, and documentation.
+The platform uses BigQuery and dbt for warehouse modeling, Python for model training and validation, FastAPI for prediction serving, PostgreSQL for forecast logging, and Next.js and Power BI for consumption and visualization.
 
----
+## Current Version
 
-## ✨ What's new in v1.8
+**v1.8 - Warehouse-driven analytics and forecasting**
 
-### Compared with v1.7 (Docker + Cloud Deployment), this version adds a complete analytics engineering layer
+The current version replaces the earlier Python-only EDA and feature-engineering workflow with a shared warehouse-native data layer.
 
-- 🏗️ **dbt + BigQuery integration** — staging and mart models with full lineage tracking
-- 🧪 **19 dbt tests** — uniqueness, not_null, and accepted_values across all models
-- 📊 **5 mart models** — monthly sales, category, segment, region, and product performance
-- 🔍 **Data lineage graph** — visual DAG from raw source to all downstream marts
-- 📄 **Auto-generated documentation** — every model and column documented via dbt docs
-- ⚙️ **Materialization strategy** — staging as views (always fresh), marts as tables (fast queries)
+Key improvements:
 
----
+- BigQuery warehouse for raw and transformed order data
+- dbt staging, intermediate, analytics, and forecasting models
+- 9 dbt models and 47 data tests
+- Leakage-safe lag and rolling features generated in SQL
+- Separate training and next-month inference marts
+- Shared Python feature contract
+- Random Forest and XGBoost training pipeline
+- FastAPI predictions sourced directly from the dbt feature mart
+- PostgreSQL prediction logging
+- Next.js forecast interface
+- Docker Compose for local end-to-end execution
+- GitHub Actions platform smoke checks
 
-## 🏗️ Architecture Overview
+## Architecture
 
-```
-Superstore.csv
-    │
-    ▼
-BigQuery raw.superstore_orders          ← raw source, never touched
-    │
-    ▼
-dbt staging: stg_superstore_orders      ← clean, rename, cast types
-    │
-    ├──► mart_monthly_sales             ← feeds FastAPI /predict (lag features pre-computed)
-    ├──► mart_sales_by_category         ← Category + Sub-Category performance
-    ├──► mart_sales_by_segment          ← Consumer / Corporate / Home Office
-    ├──► mart_sales_by_region           ← East / West / Central / South
-    └──► mart_product_performance       ← product ranking with window functions
-    │
-    ▼
-FastAPI (Render) ←→ Next.js (Vercel) ←→ PostgreSQL (Neon)
-    │
-    ▼
-Power BI Dashboards
-```
+```mermaid
+flowchart LR
+    CSV[Superstore CSV] --> RAW[BigQuery raw.superstore_orders]
 
----
+    RAW --> STG[stg_superstore_orders]
+    STG --> INT[int_monthly_sales]
 
-## 🧩 Tech Stack
+    STG --> CAT[mart_sales_by_category]
+    STG --> SEG[mart_sales_by_segment]
+    STG --> REG[mart_sales_by_region]
+    STG --> PROD[mart_product_performance]
 
-| Category | Technology | Description |
-|---|---|---|
-| **Frontend** | Next.js (React + TypeScript) | Forecast UI + logs table |
-| **Backend** | FastAPI + SQLAlchemy | API endpoints + DB logging |
-| **Database (OLTP)** | Neon PostgreSQL | Prediction logs, operational data |
-| **Database (OLAP)** | BigQuery (GCP) | Analytics layer, dbt target |
-| **Transformation** | dbt-bigquery | Staging + mart models, tests, lineage |
-| **ML Models** | RandomForest / XGBoost | Trained forecasting models |
-| **Visualization** | Power BI | KPI dashboards and insights |
-| **Containerization** | Docker + Docker Compose | Unified local & cloud environment |
-| **Deployment** | Render + Vercel | Cost-efficient public hosting |
-| **Cloud compatibility** | Azure App Service + ACR | Fully portable enterprise-grade setup |
+    INT --> MONTHLY[mart_monthly_sales]
+    INT --> TRAIN_MART[mart_forecast_training]
+    INT --> NEXT_MART[mart_next_month_features]
 
----
+    TRAIN_MART --> TRAIN[train_forecast.py]
+    TRAIN --> MODELS[RF and XGB model artifacts]
 
-## 📊 dbt Analytics Layer
+    NEXT_MART --> API[FastAPI]
+    MODELS --> API
 
-### Model Structure
+    API --> PG[PostgreSQL forecast_logs]
+    API --> UI[Next.js frontend]
 
-```
-models/
-├── staging/
-│   ├── stg_superstore_orders.sql    ← clean + rename raw data
-│   └── schema.yml                   ← source definition + tests
-└── marts/
-    ├── mart_monthly_sales.sql        ← monthly aggregation + lag features
-    ├── mart_sales_by_category.sql    ← category + sub-category performance
-    ├── mart_sales_by_segment.sql     ← segment breakdown over time
-    ├── mart_sales_by_region.sql      ← regional performance
-    ├── mart_product_performance.sql  ← product ranking with RANK() OVER PARTITION BY
-    └── schema.yml                    ← tests for all mart models
+    MONTHLY --> BI[Power BI]
+    CAT --> BI
+    SEG --> BI
+    REG --> BI
+    PROD --> BI
 ```
 
-### Design Decisions
+The raw CSV is currently loaded into BigQuery before the dbt workflow runs. Automated ingestion and scheduled orchestration are future extensions.
 
-- **Staging as views** — cheap, always fresh, single source of truth for cleaning logic
-- **Marts as tables** — fast reads for FastAPI and BI tools
-- **All marts reference staging via `{{ ref() }}`** — never the raw table directly
-- **19 tests** — uniqueness, not_null, accepted_values guard against silent data failures
+## Platform Responsibilities
 
-### Key mart: mart_monthly_sales
+### Analytics path
 
-Replaces the CSV-reading and pandas lag feature logic in `eda_v1.2.py`. Pre-computes `lag_1`, `lag_2`, `lag_3` in SQL using `LAG() OVER (ORDER BY month)` — the same logic as `df['Sales'].shift(1)` but persistent, testable, and queryable by any downstream consumer.
+```text
+Raw orders
+-> dbt staging
+-> analytics marts
+-> Power BI and analytics API consumers
+```
 
----
+The analytics marts provide monthly KPIs and category, segment, region, and product performance views.
 
-## ⚙️ Quickstart
+### Forecasting path
 
-### Local Development (Dockerized)
+Training:
+
+```text
+Raw orders
+-> int_monthly_sales
+-> mart_forecast_training
+-> model training and evaluation
+-> saved model artifact
+```
+
+Prediction:
+
+```text
+Latest completed monthly history
+-> mart_next_month_features
+-> FastAPI feature validation
+-> selected forecasting model
+-> PostgreSQL prediction log
+-> Next.js result
+```
+
+The frontend does not ask users to enter lag values manually. The API reads the six validated features directly from BigQuery.
+
+## dbt Model Layers
+
+### Staging
+
+`stg_superstore_orders`
+
+Cleans column names, casts data types, and provides a stable contract over the raw order table.
+
+### Intermediate
+
+`int_monthly_sales`
+
+Provides one reusable row per calendar month with:
+
+- total sales
+- total profit
+- order count
+- unique customer count
+
+### Analytics marts
+
+- `mart_monthly_sales`
+- `mart_sales_by_category`
+- `mart_sales_by_segment`
+- `mart_sales_by_region`
+- `mart_product_performance`
+
+`mart_monthly_sales` contains analytics KPIs only. Forecast features are intentionally kept in separate forecasting marts.
+
+### Forecasting marts
+
+`mart_forecast_training`
+
+One row per historical target month, containing the actual target and six features derived only from completed prior months.
+
+`mart_next_month_features`
+
+Exactly one row containing the six features required to forecast the next available month.
+
+### Forecast feature contract
+
+```text
+lag_1
+lag_2
+lag_3
+month_of_year
+rolling_mean_3
+rolling_mean_6
+```
+
+The same ordered contract is used by dbt, model training, saved model validation, and the prediction API.
+
+## Data Quality
+
+The current dbt project contains:
+
+- 9 models
+- 47 data tests
+- 1 source
+- 56 successful nodes in the full dbt build
+
+The tests cover:
+
+- uniqueness
+- non-null constraints
+- accepted categorical values
+- forecasting feature values
+- prediction mart row count
+- complete historical feature windows
+- target-month integrity
+
+Latest validated build:
+
+```text
+PASS=56
+WARN=0
+ERROR=0
+SKIP=0
+```
+
+## Forecasting Models
+
+The platform supports:
+
+- Random Forest
+- XGBoost
+
+Random Forest is the default model because it performed better in the current chronological hold-out evaluation.
+
+### Random Forest hold-out evaluation
+
+The evaluation uses the latest three months as a chronological hold-out.
+
+| Metric | Seasonal-naive baseline | Random Forest |
+|---|---:|---:|
+| MAPE | 23.97% | 10.67% |
+| sMAPE | 26.78% | 12.44% |
+| MAE | 23,431.59 | 12,391.16 |
+| RMSE | 25,977.29 | 20,547.28 |
+
+The Random Forest reduced sMAPE by approximately 53.5% relative to the seasonal-naive baseline on this hold-out.
+
+These results should be interpreted with care because the demonstration dataset and three-month hold-out are small.
+
+### Feature comparison
+
+A five-fold expanding-window experiment compares five features with the full six-feature contract.
+
+For Random Forest, the six-feature set:
+
+- achieved a lower average RMSE
+- achieved a lower average sMAPE
+- won 4 of 5 folds on RMSE
+- won 3 of 5 folds on sMAPE
+
+The sixth feature provides a modest average improvement rather than a universal improvement in every fold.
+
+Run the experiment with:
 
 ```bash
-docker-compose up --build
+python -m scripts.compare_feature_sets
 ```
 
-- API → http://localhost:8000
-- Frontend → http://localhost:3000
-- PostgreSQL → containerized with persistent volume
+## API
 
-### dbt + BigQuery
+The current FastAPI application is `src.api:app`.
+
+Core endpoints:
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /health` | Service version and available models |
+| `GET /models` | Available forecasting models |
+| `GET /predict?model=rf` | Forecast the next month from the dbt feature mart |
+| `GET /logs/latest?limit=10` | Read recent PostgreSQL prediction logs |
+
+Prediction flow:
+
+```text
+GET /predict?model=rf
+-> query mart_next_month_features
+-> validate six-feature contract
+-> load Random Forest artifact
+-> generate next-month forecast
+-> write forecast_logs record
+-> return prediction and feature snapshot
+```
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Warehouse | Google BigQuery |
+| Transformation | dbt-bigquery |
+| Model training | Python, pandas, scikit-learn, XGBoost |
+| Model serving | FastAPI |
+| Operational database | PostgreSQL and SQLAlchemy |
+| Frontend | Next.js, React, TypeScript |
+| Analytics visualization | Power BI |
+| Containerization | Docker and Docker Compose |
+| CI | GitHub Actions |
+
+## Local Quickstart
+
+### Requirements
+
+- Docker Desktop
+- A Google Cloud service-account key with BigQuery access
+- Existing raw order data in BigQuery
+- dbt credentials configured separately when running dbt locally
+
+### Docker environment
+
+Create an untracked `.env` file in the repository root:
+
+```dotenv
+BQ_PROJECT_ID=your-gcp-project-id
+BQ_DATASET=analytics
+BQ_KEY_FILE_HOST=C:/path/to/service-account-key.json
+```
+
+Do not commit `.env` or service-account credentials.
+
+### Start the platform
+
+```bash
+docker compose up --build
+```
+
+Local services:
+
+- Frontend: `http://localhost:3000`
+- FastAPI: `http://localhost:8000`
+- API documentation: `http://localhost:8000/docs`
+- PostgreSQL: `localhost:5432`
+
+### Stop the platform
+
+```bash
+docker compose down
+```
+
+Use the following only when the local PostgreSQL volume should also be deleted:
+
+```bash
+docker compose down -v
+```
+
+## dbt Workflow
+
+Configure the BigQuery target in your local dbt profile, then run:
 
 ```bash
 cd sales_forecast_dbt
+dbt build
+```
 
-# Run all models
-dbt run
+Generate dbt documentation:
 
-# Run all tests
-dbt test
-
-# Generate and serve documentation
+```bash
 dbt docs generate
 dbt docs serve
 ```
 
----
+## Model Training
 
-## 🖥️ Live Demo
+Set the BigQuery environment variables required by `src.bq_client`, then train the default model:
 
-| Layer | Platform | URL |
-|---|---|---|
-| **Frontend (Next.js)** | Vercel | ✅ Live UI |
-| **Backend (FastAPI)** | Render | ✅ Public API |
-| **Database (PostgreSQL)** | Neon Cloud | Persistent data layer |
-
----
-
-## 📂 Project Structure
-
+```bash
+python -m src.train_forecast --model rf
 ```
+
+Train XGBoost:
+
+```bash
+python -m src.train_forecast --model xgb
+```
+
+The training process:
+
+1. Loads `mart_forecast_training`
+2. Validates the training feature contract
+3. Uses the latest months as a chronological hold-out
+4. Compares the model with a seasonal-naive baseline
+5. Retrains the final model on all validated rows
+6. Saves the model artifact and evaluation outputs
+
+## Project Structure
+
+```text
 .
-├── sales_forecast_dbt/              ← dbt project (v1.8)
-│   ├── models/
-│   │   ├── staging/
-│   │   │   ├── stg_superstore_orders.sql
-│   │   │   └── schema.yml
-│   │   └── marts/
-│   │       ├── mart_monthly_sales.sql
-│   │       ├── mart_sales_by_category.sql
-│   │       ├── mart_sales_by_segment.sql
-│   │       ├── mart_sales_by_region.sql
-│   │       ├── mart_product_performance.sql
-│   │       └── schema.yml
-│   └── dbt_project.yml
-├── backend/
-│   └── Dockerfile
-├── data/                            ← Superstore.csv (not committed)
-├── frontend/                        ← Next.js app
-├── src/
-│   ├── eda_v1.0.py                  ← EDA MVP
-│   ├── eda_v1.1.py                  ← Enhanced EDA
-│   ├── eda_v1.2.py                  ← Forecasting (RF/XGBoost)
-│   ├── bq_client.py                 ← BigQuery connection utility
-│   ├── api_v1_5.py                  ← FastAPI backend
-│   └── db.py                        ← SQLAlchemy models
-├── reports/
-│   └── models/                      ← Saved .pkl files
-├── docker-compose.yml
-├── requirements.txt
-└── README.md
+|-- .github/
+|   `-- workflows/
+|       `-- smoke.yml
+|-- backend/
+|   `-- Dockerfile
+|-- frontend/
+|   `-- app/
+|       `-- page.tsx
+|-- reports/
+|   `-- models/
+|       |-- sales_forecast_rf.pkl
+|       `-- sales_forecast_xgb.pkl
+|-- sales_forecast_dbt/
+|   |-- models/
+|   |   |-- staging/
+|   |   |-- intermediate/
+|   |   `-- marts/
+|   |-- tests/
+|   `-- dbt_project.yml
+|-- scripts/
+|   `-- compare_feature_sets.py
+|-- src/
+|   |-- api.py
+|   |-- bq_client.py
+|   |-- db.py
+|   |-- feature_contract.py
+|   `-- train_forecast.py
+|-- docker-compose.yml
+|-- requirements.txt
+`-- README.md
 ```
 
----
+## CI Smoke Checks
 
-## 🗺️ Roadmap
+The GitHub Actions workflow validates:
 
-- [x] **v1.0** — CSV normalisation → KPIs → HTML report
-- [x] **v1.1** — Enhanced EDA: winsorisation, Top-N, geo, profit contribution
-- [x] **v1.2** — Forecasting: RF/XGBoost, MAPE 24% → 11.5% (52% reduction)
-- [x] **v1.3** — FastAPI: `/predict` endpoint
-- [x] **v1.4** — Next.js frontend
-- [x] **v1.5** — PostgreSQL: prediction logging
-- [x] **v1.6** — Power BI dashboards
-- [x] **v1.7** — Docker + cloud deployment (Render / Vercel / Neon)
-- [x] **v1.8** — dbt + BigQuery: staging, 5 marts, 19 tests, lineage graph
-- [ ] **v1.9** — Airflow orchestration: scheduled dbt runs
+- Python source compilation
+- FastAPI application import
+- required API routes
+- six-feature ordering
+- Random Forest model creation
+- committed Random Forest and XGBoost artifacts
 
----
+The smoke workflow does not require live BigQuery or PostgreSQL connections.
 
-## Dataset & Licence
+## Project Evolution
 
-- Dataset: Kaggle *Sample Superstore* (public demo dataset)
-- Intended for learning and portfolio use
-- Licence: MIT
+- **v1.0** - Initial Python EDA and KPI reporting
+- **v1.1** - Expanded analytical reporting
+- **v1.2** - Initial Random Forest and XGBoost forecasting
+- **v1.3** - FastAPI prediction endpoint
+- **v1.4** - Next.js frontend
+- **v1.5** - PostgreSQL prediction logging
+- **v1.6** - Power BI dashboards
+- **v1.7** - Docker and cloud deployment work
+- **v1.8** - Warehouse-driven analytics and forecasting architecture
 
----
+The old versioned Python EDA and API files were removed from the current source tree after their responsibilities were migrated to dbt, `train_forecast.py`, and `api.py`. Their history remains available through Git.
 
-### 💬 Built with FastAPI, Next.js, PostgreSQL, Docker, dbt, and BigQuery — covering data engineering, analytics engineering, and cloud deployment end to end.
+## Scope and Limitations
+
+This is a domain-specific monthly sales forecasting platform, not a general AutoML or arbitrary-CSV prediction service.
+
+A new dataset can use the existing pipeline when it follows the expected retail-order schema and represents the same forecasting problem. A dataset with different fields, targets, or business meaning requires a new data contract, dbt models, features, and model evaluation.
+
+Current limitations:
+
+- raw file ingestion is not automated
+- dbt and training jobs are not scheduled
+- no model registry or automatic rollback
+- no data-drift or prediction-quality monitoring
+- no automated retraining policy
+
+## Dataset
+
+The project uses the public Sample Superstore retail dataset for demonstration and portfolio purposes.
