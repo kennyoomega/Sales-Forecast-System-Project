@@ -1,8 +1,8 @@
-version: 2
+﻿version: 2
 
 models:
   - name: mart_monthly_sales
-    description: 'Monthly aggregated sales with pre-computed lag features for forecasting'
+    description: 'Monthly sales, profit, order, and customer KPIs for analytics consumers'
     columns:
       - name: month
         tests:
@@ -145,3 +145,4 @@ models:
         description: Mean sales across the latest six completed months.
         tests:
           - not_null
+
