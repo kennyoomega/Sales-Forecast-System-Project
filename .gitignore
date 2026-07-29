@@ -10,3 +10,5 @@ reports/models/*
 *.pyc
 .DS_Store
 .pbix
+
+.env
