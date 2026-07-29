@@ -1,5 +1,5 @@
 # backend/Dockerfile
-FROM python:3.10-slim
+FROM python:3.12-slim
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 
