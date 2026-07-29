@@ -1,10 +1,12 @@
 venv/
 __pycache__/
 .ipynb_checkpoints/
-reports/
+
+reports/*
 !reports/models/
+reports/models/*
 !reports/models/*.pkl
+
 *.pyc
 .DS_Store
 .pbix
-

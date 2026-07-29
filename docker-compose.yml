@@ -2,7 +2,7 @@ services:
   db:
     image: postgres:15
     container_name: sf_db
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
@@ -22,24 +22,20 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     container_name: sf_backend
-    restart: always
+    restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql+psycopg2://admin:admin@db:5432/superstore
       CORS_ORIGINS: http://localhost:3000
-      AVAILABLE_MODELS: rf,xgb
-      DISABLE_DB_LOGGING: "0"
-      # New BigQuery env vars
-      BQ_PROJECT_ID: peppy-ward-497115-k8
-      BQ_DATASET: analytics
+      BQ_PROJECT_ID: ${BQ_PROJECT_ID:-peppy-ward-497115-k8}
+      BQ_DATASET: ${BQ_DATASET:-analytics}
       BQ_KEY_FILE: /run/secrets/bq_key
     depends_on:
       db:
         condition: service_healthy
     volumes:
-      - ./reports/models:/app/reports/models:ro
-      - C:\Users\chens\.gcp\sales-forecast-key.json:/run/secrets/bq_key:ro
+      - "${BQ_KEY_FILE_HOST}:/run/secrets/bq_key:ro"
 
   frontend:
     build:
@@ -47,7 +43,7 @@ services:
       args:
         NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
     container_name: sf_frontend
-    restart: always
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
