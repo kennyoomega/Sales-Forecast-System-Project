@@ -1,6 +1,6 @@
 -- models/marts/mart_sales_by_region.sql
 -- Purpose: Geographic breakdown
--- Replaces: eda_v1.0 plot_geo_topn() logic
+-- Grain: one row per region and state.
 
 SELECT
     region,

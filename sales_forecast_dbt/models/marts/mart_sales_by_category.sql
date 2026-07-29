@@ -1,6 +1,6 @@
 -- models/marts/mart_sales_by_category.sql
 -- Purpose: Category + Sub-Category performance
--- Replaces: eda_v1.0 plot_category() and plot_subcategory_topn() logic
+-- Grain: one row per category and sub-category.
 
 SELECT
     category,
