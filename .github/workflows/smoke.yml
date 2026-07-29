@@ -1,22 +1,175 @@
-﻿name: smoke-eda
-on: [push, pull_request]
+﻿name: platform-smoke
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
 jobs:
-  run-eda:
+  core-smoke:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install deps
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Import & CLI parse smoke
+
+      - name: Compile Python source
         run: |
-          python - << "PY"
-          import importlib.util
-          spec = importlib.util.spec_from_file_location("eda", "src/eda_v1.0.py")
-          mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
-          print("OK: import & CLI available")
+          python -m compileall -q src scripts
+
+      - name: Run platform smoke checks
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          import joblib
+          import numpy as np
+          import pandas as pd
+
+          from src.api import app
+          from src.feature_contract import (
+              FEATURE_COLUMNS,
+              validate_model_feature_names,
+          )
+          from src.train_forecast import create_model
+
+
+          assert app.version == "1.8.0"
+
+          route_paths = {
+              route.path
+              for route in app.routes
+          }
+
+          required_routes = {
+              "/health",
+              "/models",
+              "/predict",
+              "/logs/latest",
+          }
+
+          missing_routes = required_routes.difference(
+              route_paths
+          )
+
+          assert not missing_routes, (
+              "Missing API routes: "
+              + ", ".join(sorted(missing_routes))
+          )
+
+
+          X = pd.DataFrame(
+              {
+                  "lag_1": np.linspace(
+                      20_000,
+                      42_000,
+                      12,
+                  ),
+                  "lag_2": np.linspace(
+                      18_000,
+                      40_000,
+                      12,
+                  ),
+                  "lag_3": np.linspace(
+                      16_000,
+                      38_000,
+                      12,
+                  ),
+                  "month_of_year": np.arange(
+                      1,
+                      13,
+                      dtype=float,
+                  ),
+                  "rolling_mean_3": np.linspace(
+                      18_000,
+                      40_000,
+                      12,
+                  ),
+                  "rolling_mean_6": np.linspace(
+                      15_000,
+                      37_000,
+                      12,
+                  ),
+              }
+          )
+
+          assert tuple(X.columns) == tuple(
+              FEATURE_COLUMNS
+          )
+
+          y = pd.Series(
+              np.linspace(
+                  22_000,
+                  44_000,
+                  12,
+              ),
+              name="target_sales",
+          )
+
+          smoke_model = create_model("rf")
+          smoke_model.fit(X, y)
+
+          validate_model_feature_names(
+              getattr(
+                  smoke_model,
+                  "feature_names_in_",
+                  None,
+              )
+          )
+
+
+          model_paths = sorted(
+              Path("reports/models").glob(
+                  "sales_forecast_*.pkl"
+              )
+          )
+
+          assert model_paths, (
+              "No committed forecasting models found."
+          )
+
+          for model_path in model_paths:
+              stored_model = joblib.load(model_path)
+
+              validate_model_feature_names(
+                  getattr(
+                      stored_model,
+                      "feature_names_in_",
+                      None,
+                  )
+              )
+
+              print(
+                  "Validated model artifact:",
+                  model_path,
+              )
+
+
+          print(
+              "Validated API routes:",
+              ", ".join(
+                  sorted(required_routes)
+              ),
+          )
+
+          print(
+              "Validated feature contract:",
+              ", ".join(FEATURE_COLUMNS),
+          )
+
+          print("Platform smoke checks passed.")
           PY
