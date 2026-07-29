@@ -49,3 +49,54 @@ models:
       - name: product_id
         tests:
           - not_null
+
+  - name: mart_forecast_training
+    description: >
+      Historical monthly forecasting dataset. Each row contains target sales
+      and six leakage-safe features derived exclusively from completed months
+      before the target month.
+    columns:
+      - name: target_month
+        description: Month whose sales value is being predicted.
+        tests:
+          - unique
+          - not_null
+
+      - name: target_sales
+        description: Actual sales for the target month.
+        tests:
+          - not_null
+
+      - name: lag_1
+        description: Sales from one month before the target month.
+        tests:
+          - not_null
+
+      - name: lag_2
+        description: Sales from two months before the target month.
+        tests:
+          - not_null
+
+      - name: lag_3
+        description: Sales from three months before the target month.
+        tests:
+          - not_null
+
+      - name: month_of_year
+        description: Calendar month number of the target month.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                quote: false
+
+      - name: rolling_mean_3
+        description: Mean sales across the three completed months before the target.
+        tests:
+          - not_null
+
+      - name: rolling_mean_6
+        description: Mean sales across the six completed months before the target.
+        tests:
+          - not_null
