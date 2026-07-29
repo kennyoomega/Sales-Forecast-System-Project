@@ -100,3 +100,48 @@ models:
         description: Mean sales across the six completed months before the target.
         tests:
           - not_null
+
+  - name: mart_next_month_features
+    description: >
+      One validated feature row for forecasting the month immediately after
+      the latest completed month in the warehouse.
+    columns:
+      - name: target_month
+        description: Month to be forecast.
+        tests:
+          - unique
+          - not_null
+
+      - name: lag_1
+        description: Sales from the latest completed month.
+        tests:
+          - not_null
+
+      - name: lag_2
+        description: Sales from two months before the target month.
+        tests:
+          - not_null
+
+      - name: lag_3
+        description: Sales from three months before the target month.
+        tests:
+          - not_null
+
+      - name: month_of_year
+        description: Calendar month number of the forecast target.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                quote: false
+
+      - name: rolling_mean_3
+        description: Mean sales across the latest three completed months.
+        tests:
+          - not_null
+
+      - name: rolling_mean_6
+        description: Mean sales across the latest six completed months.
+        tests:
+          - not_null
