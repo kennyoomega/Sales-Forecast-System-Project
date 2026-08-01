@@ -1,29 +1,51 @@
 # Sales Analytics & Forecasting Platform
 
-A containerized end-to-end platform that transforms raw retail order data into tested analytics models and next-month sales forecasts.
+A warehouse-driven, end-to-end platform that transforms raw retail order data into tested analytics data products and next-month sales forecasts.
 
-The platform uses BigQuery and dbt for warehouse modeling, Python for model training and validation, FastAPI for prediction serving, PostgreSQL for forecast logging, and Next.js and Power BI for consumption and visualization.
+The platform uses BigQuery and dbt for warehouse modeling, Python for model training and validation, FastAPI for prediction serving, PostgreSQL for forecast logging, Power BI for business analytics, and Next.js for forecast interaction and history review.
 
 ## Current Version
 
-**v1.8 - Warehouse-driven analytics and forecasting**
+**v1.8 — Warehouse-driven analytics and forecasting**
 
 The current version replaces the earlier Python-only EDA and feature-engineering workflow with a shared warehouse-native data layer.
 
-Key improvements:
+Key capabilities:
 
-- BigQuery warehouse for raw and transformed order data
-- dbt staging, intermediate, analytics, and forecasting models
+- BigQuery warehouse for raw and transformed retail order data
+- Layered dbt staging, intermediate, analytics, and forecasting models
 - 9 dbt models and 47 data tests
-- Leakage-safe lag and rolling features generated in SQL
-- Separate training and next-month inference marts
-- Shared Python feature contract
-- Random Forest and XGBoost training pipeline
+- 56 of 56 dbt build nodes passing
+- Leakage-safe lag and rolling-window features generated in SQL
+- Separate historical training and next-month inference marts
+- Shared six-feature contract across dbt, Python, saved models, and API inference
+- Random Forest and XGBoost training and evaluation pipeline
 - FastAPI predictions sourced directly from the dbt feature mart
-- PostgreSQL prediction logging
-- Next.js forecast interface
+- PostgreSQL feature-snapshot and prediction logging
+- Next.js forecast interface and history review
+- Power BI report connected directly to five BigQuery analytics marts
+- Executive Overview and Product Performance report pages
 - Docker Compose for local end-to-end execution
 - GitHub Actions platform smoke checks
+- Cloud deployment across Render, Vercel, Neon PostgreSQL, and BigQuery
+
+## Live Demo
+
+- **Frontend:** [Sales Forecast Platform v1.8](https://sales-forecast-system-project.vercel.app)
+- **Backend API:** [FastAPI service](https://sales-forecast-system-project.onrender.com)
+- **API documentation:** [Swagger UI](https://sales-forecast-system-project.onrender.com/docs)
+- **Health endpoint:** [Service health](https://sales-forecast-system-project.onrender.com/health)
+
+The deployed workflow has been validated end to end:
+
+```text
+Vercel frontend
+-> Render FastAPI
+-> BigQuery dbt feature mart
+-> Random Forest or XGBoost model
+-> Neon PostgreSQL prediction log
+-> frontend result and history
+```
 
 ## Architecture
 
@@ -66,24 +88,32 @@ The raw CSV is currently loaded into BigQuery before the dbt workflow runs. Auto
 ### Analytics path
 
 ```text
-Raw orders
+Raw retail orders
 -> dbt staging
--> analytics marts
+-> reusable intermediate models
+-> business-ready analytics marts
 -> Power BI and analytics API consumers
 ```
 
-The analytics marts provide monthly KPIs and category, segment, region, and product performance views.
+The analytics marts provide:
+
+- monthly sales KPIs
+- category and sub-category performance
+- customer-segment performance
+- regional and state-level performance
+- product-level sales, profit, margin, and ranking
 
 ### Forecasting path
 
 Training:
 
 ```text
-Raw orders
+Raw retail orders
 -> int_monthly_sales
 -> mart_forecast_training
--> model training and evaluation
--> saved model artifact
+-> feature-contract validation
+-> chronological model training and evaluation
+-> saved RF or XGBoost model artifact
 ```
 
 Prediction:
@@ -94,10 +124,60 @@ Latest completed monthly history
 -> FastAPI feature validation
 -> selected forecasting model
 -> PostgreSQL prediction log
--> Next.js result
+-> Next.js result and history
 ```
 
 The frontend does not ask users to enter lag values manually. The API reads the six validated features directly from BigQuery.
+
+## Power BI Analytics
+
+The Power BI report connects directly to the five analytics marts in BigQuery:
+
+- `mart_monthly_sales`
+- `mart_sales_by_category`
+- `mart_sales_by_segment`
+- `mart_sales_by_region`
+- `mart_product_performance`
+
+The reporting layer is intentionally separated from the forecasting serving path:
+
+```text
+Analytics marts
+-> Power BI reporting
+
+Forecasting marts
+-> Python training and FastAPI inference
+```
+
+### Executive Overview
+
+The Executive Overview page provides:
+
+- total sales
+- total profit
+- total orders
+- overall profit margin
+- monthly sales trend
+- sales by category
+- monthly sales by customer segment
+- sales by region
+
+![Power BI Executive Overview](docs/images/powerbi_executive_overview_v1.8.png)
+
+### Product Performance
+
+The Product Performance page provides:
+
+- category and sub-category filters
+- the top 10 products within each sub-category
+- product-level sales
+- product-level profit
+- profit margin
+- ranking within each sub-category
+
+![Power BI Product Performance](docs/images/powerbi_product_performance_v1.8.png)
+
+The final `.pbix` file and exported PDF are maintained separately and excluded from Git. The screenshots above document the final v1.8 report output.
 
 ## dbt Model Layers
 
@@ -106,6 +186,8 @@ The frontend does not ask users to enter lag values manually. The API reads the 
 `stg_superstore_orders`
 
 Cleans column names, casts data types, and provides a stable contract over the raw order table.
+
+**Grain:** one row per retail order line.
 
 ### Intermediate
 
@@ -118,6 +200,8 @@ Provides one reusable row per calendar month with:
 - order count
 - unique customer count
 
+**Grain:** one row per calendar month.
+
 ### Analytics marts
 
 - `mart_monthly_sales`
@@ -126,15 +210,19 @@ Provides one reusable row per calendar month with:
 - `mart_sales_by_region`
 - `mart_product_performance`
 
-`mart_monthly_sales` contains analytics KPIs only. Forecast features are intentionally kept in separate forecasting marts.
+`mart_monthly_sales` contains analytics KPIs only. Forecasting features are intentionally kept in separate forecasting marts.
+
+The marts are designed as business-ready data products for Power BI, analytical APIs, and other downstream consumers.
 
 ### Forecasting marts
 
-`mart_forecast_training`
+#### `mart_forecast_training`
 
 One row per historical target month, containing the actual target and six features derived only from completed prior months.
 
-`mart_next_month_features`
+The current demonstration dataset produces 42 valid historical training rows after requiring complete historical feature windows.
+
+#### `mart_next_month_features`
 
 Exactly one row containing the six features required to forecast the next available month.
 
@@ -149,7 +237,14 @@ rolling_mean_3
 rolling_mean_6
 ```
 
-The same ordered contract is used by dbt, model training, saved model validation, and the prediction API.
+The same ordered contract is used by:
+
+- dbt forecasting marts
+- Python training validation
+- saved model-artifact validation
+- FastAPI inference
+
+This prevents training-serving feature mismatches and silent substitution of missing features.
 
 ## Data Quality
 
@@ -165,10 +260,12 @@ The tests cover:
 - uniqueness
 - non-null constraints
 - accepted categorical values
-- forecasting feature values
-- prediction mart row count
+- forecasting feature validity
+- prediction-mart row count
 - complete historical feature windows
 - target-month integrity
+- valid month-of-year ranges
+- required historical continuity
 
 Latest validated build:
 
@@ -179,6 +276,23 @@ ERROR=0
 SKIP=0
 ```
 
+## Leakage Prevention
+
+Forecasting features are generated only from completed prior months.
+
+For a target month, rolling features exclude the current target row:
+
+```text
+historical rows
+-> 6 PRECEDING
+-> through 1 PRECEDING
+-> target month excluded
+```
+
+This prevents the target value from leaking into its own feature set.
+
+The original implementation included the current row in rolling calculations. The v1.8 architecture corrected the window boundaries and separated analytics KPIs from forecasting features.
+
 ## Forecasting Models
 
 The platform supports:
@@ -188,9 +302,21 @@ The platform supports:
 
 Random Forest is the default model because it performed better in the current chronological hold-out evaluation.
 
-### Random Forest hold-out evaluation
+### Evaluation design
 
-The evaluation uses the latest three months as a chronological hold-out.
+The evaluation pipeline:
+
+1. Loads `mart_forecast_training`
+2. Validates the shared feature contract
+3. Preserves chronological ordering
+4. Uses the latest three months as the hold-out period
+5. Compares the model with a seasonal-naive baseline
+6. Retrains the final selected model on all validated rows
+7. Saves the final serialized model artifact
+
+A random train-test split is not used because it would allow future periods to influence evaluation of earlier periods.
+
+### Random Forest hold-out evaluation
 
 | Metric | Seasonal-naive baseline | Random Forest |
 |---|---:|---:|
@@ -199,9 +325,20 @@ The evaluation uses the latest three months as a chronological hold-out.
 | MAE | 23,431.59 | 12,391.16 |
 | RMSE | 25,977.29 | 20,547.28 |
 
-The Random Forest reduced sMAPE by approximately 53.5% relative to the seasonal-naive baseline on this hold-out.
+Random Forest reduced sMAPE by approximately 53.5% relative to the seasonal-naive baseline on the three-month hold-out.
 
-These results should be interpreted with care because the demonstration dataset and three-month hold-out are small.
+These results should be interpreted with care because the demonstration dataset and hold-out period are small.
+
+### XGBoost hold-out evaluation
+
+| Metric | XGBoost |
+|---|---:|
+| MAPE | 22.89% |
+| sMAPE | 25.89% |
+| MAE | 21,779.58 |
+| RMSE | 22,727.09 |
+
+Random Forest therefore remains the recommended default model for the current dataset.
 
 ### Feature comparison
 
@@ -214,6 +351,11 @@ For Random Forest, the six-feature set:
 - won 4 of 5 folds on RMSE
 - won 3 of 5 folds on sMAPE
 
+For XGBoost, the six-feature set:
+
+- won 3 of 5 folds on RMSE
+- won 2 of 5 folds on sMAPE
+
 The sixth feature provides a modest average improvement rather than a universal improvement in every fold.
 
 Run the experiment with:
@@ -222,9 +364,36 @@ Run the experiment with:
 python -m scripts.compare_feature_sets
 ```
 
+## Feature Contract and Reliability
+
+`src/feature_contract.py` validates:
+
+- all six required feature columns
+- exact feature ordering
+- null values
+- numeric values
+- valid month-of-year ranges
+- target-month uniqueness
+- exactly one inference row
+- saved-model feature names
+
+The v1.8 reliability work also removed:
+
+- silent fallback to a baseline prediction
+- default substitution of unknown features with zero
+- manual lag entry in the frontend
+- duplicated feature logic across training and serving
+- the incorrect substitution of `rolling_mean_6` with `rolling_mean_3`
+- outdated API and EDA implementations
+- inconsistent Python versions across local, Docker, and CI environments
+
 ## API
 
-The current FastAPI application is `src.api:app`.
+The current FastAPI application is:
+
+```text
+src.api:app
+```
 
 Core endpoints:
 
@@ -232,7 +401,8 @@ Core endpoints:
 |---|---|
 | `GET /health` | Service version and available models |
 | `GET /models` | Available forecasting models |
-| `GET /predict?model=rf` | Forecast the next month from the dbt feature mart |
+| `GET /predict?model=rf` | Forecast the next month using the Random Forest model |
+| `GET /predict?model=xgb` | Forecast the next month using the XGBoost model |
 | `GET /logs/latest?limit=10` | Read recent PostgreSQL prediction logs |
 
 Prediction flow:
@@ -240,12 +410,48 @@ Prediction flow:
 ```text
 GET /predict?model=rf
 -> query mart_next_month_features
--> validate six-feature contract
--> load Random Forest artifact
--> generate next-month forecast
--> write forecast_logs record
--> return prediction and feature snapshot
+-> validate the six-feature contract
+-> load the cached Random Forest artifact
+-> generate the next-month forecast
+-> write a forecast_logs record
+-> return the prediction and feature snapshot
 ```
+
+Example response:
+
+```json
+{
+  "target_month": "2018-01-01",
+  "prediction": 28605.9,
+  "model": "rf",
+  "features": {
+    "lag_1": 83829.3188,
+    "lag_2": 118447.825,
+    "lag_3": 77776.9232,
+    "month_of_year": 1,
+    "rolling_mean_3": 93351.3557,
+    "rolling_mean_6": 79384.3372
+  },
+  "feature_source": "mart_next_month_features",
+  "logged": true
+}
+```
+
+Internal exceptions are logged by the backend but are not returned directly to API clients.
+
+When BigQuery forecast features are unavailable, the API returns a controlled service-unavailable response instead of silently returning an alternative prediction.
+
+## Prediction Logging
+
+Each successful prediction stores:
+
+- selected model
+- target month
+- all six input features
+- prediction value
+- creation timestamp
+
+This makes forecast requests traceable and allows the frontend to display recent prediction history.
 
 ## Tech Stack
 
@@ -253,12 +459,15 @@ GET /predict?model=rf
 |---|---|
 | Warehouse | Google BigQuery |
 | Transformation | dbt-bigquery |
+| Analytics modeling | SQL and dbt |
 | Model training | Python, pandas, scikit-learn, XGBoost |
 | Model serving | FastAPI |
-| Operational database | PostgreSQL and SQLAlchemy |
+| Operational database | PostgreSQL, Neon, SQLAlchemy |
 | Frontend | Next.js, React, TypeScript |
 | Analytics visualization | Power BI |
 | Containerization | Docker and Docker Compose |
+| Backend deployment | Render |
+| Frontend deployment | Vercel |
 | CI | GitHub Actions |
 
 ## Local Quickstart
@@ -267,7 +476,7 @@ GET /predict?model=rf
 
 - Docker Desktop
 - A Google Cloud service-account key with BigQuery access
-- Existing raw order data in BigQuery
+- Existing raw retail order data in BigQuery
 - dbt credentials configured separately when running dbt locally
 
 ### Docker environment
@@ -343,8 +552,31 @@ The training process:
 2. Validates the training feature contract
 3. Uses the latest months as a chronological hold-out
 4. Compares the model with a seasonal-naive baseline
-5. Retrains the final model on all validated rows
-6. Saves the model artifact and evaluation outputs
+5. Evaluates the selected forecasting model
+6. Retrains the final model on all validated rows
+7. Saves the model artifact and evaluation outputs
+
+## Power BI Workflow
+
+The Power BI report connects directly to the five BigQuery analytics marts.
+
+Current report pages:
+
+```text
+Executive Overview
+Product Performance
+```
+
+To refresh the report locally:
+
+1. Open `Sales_Forecasting_Analytics_Platform_v1.8.pbix`
+2. Authenticate to Google BigQuery
+3. Select `Home -> Refresh`
+4. Validate both report pages
+5. Save the updated `.pbix`
+6. Export the report to PDF when needed
+
+The `.pbix` file is excluded from Git and should be backed up separately.
 
 ## Project Structure
 
@@ -355,6 +587,10 @@ The training process:
 |       `-- smoke.yml
 |-- backend/
 |   `-- Dockerfile
+|-- docs/
+|   `-- images/
+|       |-- powerbi_executive_overview_v1.8.png
+|       `-- powerbi_product_performance_v1.8.png
 |-- frontend/
 |   `-- app/
 |       `-- page.tsx
@@ -388,41 +624,123 @@ The GitHub Actions workflow validates:
 
 - Python source compilation
 - FastAPI application import
+- API version
 - required API routes
 - six-feature ordering
 - Random Forest model creation
-- committed Random Forest and XGBoost artifacts
+- committed Random Forest artifact
+- committed XGBoost artifact
+- saved-model feature compatibility
 
 The smoke workflow does not require live BigQuery or PostgreSQL connections.
 
+## Deployment
+
+### Backend
+
+The FastAPI backend is deployed on Render.
+
+Runtime configuration includes:
+
+- `BQ_PROJECT_ID`
+- `BQ_DATASET`
+- `BQ_KEY_FILE`
+- `DATABASE_URL`
+- allowed CORS origins
+
+The Google Cloud service-account JSON is provided as a Render Secret File and is not stored in Git.
+
+### Frontend
+
+The Next.js frontend is deployed on Vercel.
+
+The production API endpoint is configured through:
+
+```text
+NEXT_PUBLIC_API_BASE_URL
+```
+
+### Operational database
+
+Prediction logs are stored in Neon PostgreSQL.
+
+### Warehouse
+
+Analytics and forecasting data products are stored in Google BigQuery and generated by dbt.
+
 ## Project Evolution
 
-- **v1.0** - Initial Python EDA and KPI reporting
-- **v1.1** - Expanded analytical reporting
-- **v1.2** - Initial Random Forest and XGBoost forecasting
-- **v1.3** - FastAPI prediction endpoint
-- **v1.4** - Next.js frontend
-- **v1.5** - PostgreSQL prediction logging
-- **v1.6** - Power BI dashboards
-- **v1.7** - Docker and cloud deployment work
-- **v1.8** - Warehouse-driven analytics and forecasting architecture
+- **v1.0** — Initial Python EDA and KPI reporting
+- **v1.1** — Expanded analytical reporting
+- **v1.2** — Initial Random Forest and XGBoost forecasting
+- **v1.3** — FastAPI prediction endpoint
+- **v1.4** — Next.js frontend
+- **v1.5** — PostgreSQL prediction logging
+- **v1.6** — Initial Power BI forecast-log dashboard
+- **v1.7** — Docker and cloud deployment work
+- **v1.8** — Warehouse-driven analytics and forecasting architecture, rebuilt Power BI reporting on five BigQuery analytics marts, reliability improvements, and validated end-to-end cloud deployment
 
-The old versioned Python EDA and API files were removed from the current source tree after their responsibilities were migrated to dbt, `train_forecast.py`, and `api.py`. Their history remains available through Git.
+The old versioned Python EDA and API files were removed from the current source tree after their responsibilities were migrated to dbt, `train_forecast.py`, and `api.py`.
+
+Their development history remains available through Git.
+
+## Production-Oriented Design Choices
+
+The platform includes several production-oriented engineering decisions:
+
+- centralized transformation logic in dbt
+- clearly defined model grain
+- separate analytics, training, and inference marts
+- leakage-safe historical features
+- explicit training-serving feature contract
+- controlled API error handling
+- no silent prediction fallback
+- saved input-feature snapshots
+- containerized local execution
+- CI smoke checks
+- environment-specific secret management
+- independently deployed frontend, backend, warehouse, and operational database
 
 ## Scope and Limitations
 
 This is a domain-specific monthly sales forecasting platform, not a general AutoML or arbitrary-CSV prediction service.
 
-A new dataset can use the existing pipeline when it follows the expected retail-order schema and represents the same forecasting problem. A dataset with different fields, targets, or business meaning requires a new data contract, dbt models, features, and model evaluation.
+A new dataset can use the existing pipeline when it follows the expected retail-order schema and represents the same forecasting problem.
+
+A dataset with different fields, targets, or business meaning requires:
+
+- a new source-data contract
+- updated staging logic
+- new business transformations
+- new forecasting features
+- new model evaluation
 
 Current limitations:
 
 - raw file ingestion is not automated
 - dbt and training jobs are not scheduled
+- no workflow orchestrator
 - no model registry or automatic rollback
-- no data-drift or prediction-quality monitoring
+- no data-drift monitoring
+- no prediction-quality monitoring after deployment
 - no automated retraining policy
+- no user authentication
+- limited centralized observability
+- Power BI refresh is currently performed manually in Power BI Desktop
+- Power BI Service publishing and scheduled refresh are not configured
 
 ## Dataset
 
 The project uses the public Sample Superstore retail dataset for demonstration and portfolio purposes.
+
+The dataset is used to demonstrate:
+
+- warehouse modeling
+- analytics engineering
+- data-quality testing
+- forecasting feature engineering
+- chronological model evaluation
+- API serving
+- operational logging
+- BI reporting
+- containerized and cloud deployment
